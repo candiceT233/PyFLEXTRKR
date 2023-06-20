@@ -21,12 +21,9 @@ import time
 FLUSH_MEM = os.environ.get("FLUSH_MEM")
 INVALID_OS_CACHE = os.environ.get("INVALID_OS_CACHE")
 
-def invalidate_all_files(logger,directory):
-    target_dir = directory[:-1]
-    logger.info(f"Executing command \"touch {target_dir}/*\"")
-    command = f"touch {target_dir}/*"
-    if 'input' not in target_dir:
-        command = f"touch {target_dir}/*/*"
+def flush_os_cache(logger):
+    logger.info(f"Flushing OS Cahces ...")
+    command = "echo 3 | sudo tee /proc/sys/vm/drop_caches"
     subprocess.call(command, shell=True)
 
 
@@ -52,8 +49,9 @@ if __name__ == '__main__':
     if config['run_preprocess']:
         preprocess_wrf(config)
         if INVALID_OS_CACHE == "TRUE":
-            invalidate_all_files(logger,config['wrfout_path'])
-            invalidate_all_files(logger,config['root_path'])
+            start_time = time.perf_counter()
+            flush_os_cache(logger)
+            elapsed_time = (time.perf_counter() - start_time) * 1000
             
     ################################################################################################
     # Parallel processing options
@@ -73,124 +71,74 @@ if __name__ == '__main__':
     else:
         logger.info(f"Running in serial.")
     
-    file_invalid_time = []
+    flush_os_cache_time = []
     
     # Step 1 - Identify features
     if config['run_idfeature']:
         os.environ['CURR_TASK'] = 'run_idfeature'
         idfeature_driver(config)
-        if INVALID_OS_CACHE == "TRUE":
+        if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
-            invalidate_all_files(logger,config['wrfout_path'])
-            invalidate_all_files(logger,config['root_path'])
-            elapsed_time = (time.perf_counter() - start_time) * 1000
+            flush_os_cache(logger)
+            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
             
 
     # Step 2 - Link features in time adjacent files
-    if config['run_tracksingle']:
-        if FLUSH_MEM == "TRUE":
-            client.shutdown()
-            dask_tmp_dir = config.get("dask_tmp_dir", "./")
-            dask.config.set({'temporary-directory': dask_tmp_dir})
-            # Local cluster
-            cluster = LocalCluster(n_workers=config['nprocesses'], threads_per_worker=1)
-            client = Client(cluster)
-        if INVALID_OS_CACHE == "TRUE":
-            start_time = time.perf_counter()
-            invalidate_all_files(logger,config['wrfout_path'])
-            invalidate_all_files(logger,config['root_path'])
-            file_invalid_time.append((time.perf_counter() - start_time) * 1000)
-        
+    if config['run_tracksingle']:        
         os.environ['CURR_TASK'] = 'run_tracksingle'
         tracksingle_driver(config)
+        if FLUSH_MEM == "TRUE":
+            start_time = time.perf_counter()
+            flush_os_cache(logger)
+            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
 
     # Step 3 - Track features through the entire dataset
     if config['run_gettracks']:
-        if FLUSH_MEM == "TRUE":
-            client.shutdown()
-            cluster = LocalCluster(n_workers=config['nprocesses'], threads_per_worker=1)
-            client = Client(cluster)
-        if INVALID_OS_CACHE == "TRUE":
-            start_time = time.perf_counter()
-            invalidate_all_files(logger,config['wrfout_path'])
-            invalidate_all_files(logger,config['root_path'])
-            file_invalid_time.append((time.perf_counter() - start_time) * 1000)
-        
         os.environ['CURR_TASK'] = 'run_gettracks'
         tracknumbers_filename = gettracknumbers(config)
+        if FLUSH_MEM == "TRUE":
+            start_time = time.perf_counter()
+            flush_os_cache(logger)
+            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
 
     # Step 4 - Calculate track statistics
     if config['run_trackstats']:
-        if FLUSH_MEM == "TRUE":
-            client.shutdown()
-            cluster = LocalCluster(n_workers=config['nprocesses'], threads_per_worker=1)
-            client = Client(cluster)
-        if INVALID_OS_CACHE == "TRUE":
-            start_time = time.perf_counter()
-            invalidate_all_files(logger,config['wrfout_path'])
-            invalidate_all_files(logger,config['root_path'])
-            file_invalid_time.append((time.perf_counter() - start_time) * 1000)
-        
         os.environ['CURR_TASK'] = 'run_trackstats'
         trackstats_filename = trackstats_driver(config)
+        if FLUSH_MEM == "TRUE":
+            start_time = time.perf_counter()
+            flush_os_cache(logger)
+            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
 
     # Step 5 - Identify MCS using Tb
     if config['run_identifymcs']:
-        if FLUSH_MEM == "TRUE":
-            client.shutdown()
-            cluster = LocalCluster(n_workers=config['nprocesses'], threads_per_worker=1)
-            client = Client(cluster)
-        if INVALID_OS_CACHE == "TRUE":
-            start_time = time.perf_counter()
-            invalidate_all_files(logger,config['wrfout_path'])
-            invalidate_all_files(logger,config['root_path'])
-            file_invalid_time.append((time.perf_counter() - start_time) * 1000)
-            
         os.environ['CURR_TASK'] = 'run_identifymcs'
         mcsstats_filename = identifymcs_tb(config)
+        if FLUSH_MEM == "TRUE":
+            start_time = time.perf_counter()
+            flush_os_cache(logger)
+            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
 
     # Step 6 - Match PF to MCS
     if config['run_matchpf']:
-        if FLUSH_MEM == "TRUE":
-            client.shutdown()
-            cluster = LocalCluster(n_workers=config['nprocesses'], threads_per_worker=1)
-            client = Client(cluster)
-        if INVALID_OS_CACHE == "TRUE":
-            start_time = time.perf_counter()
-            invalidate_all_files(logger,config['wrfout_path'])
-            invalidate_all_files(logger,config['root_path'])
-            file_invalid_time.append((time.perf_counter() - start_time) * 1000)
-        
         os.environ['CURR_TASK'] = 'run_matchpf'    
         pfstats_filename = match_tbpf_tracks(config)
+        if FLUSH_MEM == "TRUE":
+            start_time = time.perf_counter()
+            flush_os_cache(logger)
+            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
 
     # Step 7 - Identify robust MCS
     if config['run_robustmcs']:
-        if FLUSH_MEM == "TRUE":
-            client.shutdown()
-            cluster = LocalCluster(n_workers=config['nprocesses'], threads_per_worker=1)
-            client = Client(cluster)
-        if INVALID_OS_CACHE == "TRUE":
-            start_time = time.perf_counter()
-            invalidate_all_files(logger,config['wrfout_path'])
-            invalidate_all_files(logger,config['root_path'])
-            file_invalid_time.append((time.perf_counter() - start_time) * 1000)
-        
         os.environ['CURR_TASK'] = 'run_robustmcs'
         robustmcsstats_filename = define_robust_mcs_radar(config)
+        if FLUSH_MEM == "TRUE":
+            start_time = time.perf_counter()
+            flush_os_cache(logger)
+            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
 
     # Step 8 - Map tracking to pixel files
     if config['run_mapfeature']:
-        if FLUSH_MEM == "TRUE":
-            client.shutdown()
-            cluster = LocalCluster(n_workers=config['nprocesses'], threads_per_worker=1)
-            client = Client(cluster)
-        if INVALID_OS_CACHE == "TRUE":
-            start_time = time.perf_counter()
-            invalidate_all_files(logger,config['wrfout_path'])
-            invalidate_all_files(logger,config['root_path'])
-            file_invalid_time.append((time.perf_counter() - start_time) * 1000)
-        
         # Map robust MCS track numbers to pixel files (default)
         os.environ['CURR_TASK'] =  'run_mapfeature'
         mapfeature_driver(config, trackstats_filebase=mcsrobust_filebase)
@@ -198,21 +146,19 @@ if __name__ == '__main__':
         # mapfeature_driver(config, trackstats_filebase=mcstbstats_filebase, outpath_basename=mcstbmap_outpath)
         # # Map all Tb track numbers to pixel level files (provide outpath_basename keyword)
         # mapfeature_driver(config, trackstats_filebase=trackstats_filebase, outpath_basename=alltrackmap_outpath)
+        if FLUSH_MEM == "TRUE":
+            start_time = time.perf_counter()
+            flush_os_cache(logger)
+            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
 
     # Step 9 - Movement speed calculation
     if config['run_speed']:
-        if FLUSH_MEM == "TRUE":
-            client.shutdown()
-            cluster = LocalCluster(n_workers=config['nprocesses'], threads_per_worker=1)
-            client = Client(cluster)
-        if INVALID_OS_CACHE == "TRUE":
-            start_time = time.perf_counter()
-            invalidate_all_files(logger,config['wrfout_path'])
-            invalidate_all_files(logger,config['root_path'])
-            file_invalid_time.append((time.perf_counter() - start_time) * 1000)
-        
         os.environ['CURR_TASK'] = 'run_speed'
         movement_speed(config)
+        if FLUSH_MEM == "TRUE":
+            start_time = time.perf_counter()
+            flush_os_cache(logger)
+            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     
-    if INVALID_OS_CACHE == "TRUE":
-        logger.info("File invaliation overhead : {:.2f} milliseconds".format(sum(file_invalid_time)))
+    if FLUSH_MEM == "TRUE":
+        logger.info("OS cache flush overhead : {:.2f} milliseconds".format(sum(flush_os_cache_time)))
