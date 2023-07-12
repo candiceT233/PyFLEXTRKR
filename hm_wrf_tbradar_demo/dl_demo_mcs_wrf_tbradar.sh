@@ -48,9 +48,9 @@ echo "ib_hostlist: $ib_hostlist"
 TEST_NAME='wrf_tbradar'
 
 # Specify directory for the demo data
-dir_demo="/qfs/projects/oddite/tang584/flextrkr_runs/${TEST_NAME}" #NFS
+dir_demo="/qfs/projects/oddite/tang584/flextrkr_runs/hm_${TEST_NAME}" #NFS
 mkdir -p $dir_demo
-# rm -rf $dir_demo/*
+rm -rf $dir_demo/*
 # Example config file name
 # config_example='config_wrf_mcs_tbradar_example.yml'
 # config_example='config_wrf_mcs_tbradar_short.yml'
@@ -58,16 +58,18 @@ config_example='config_wrf_mcs_tbradar_seq.yml'
 config_demo='config_wrf_mcs_tbradar_demo.yml'
 cp ./$config_demo $dir_demo
 # Demo input data directory
-dir_input="/qfs/projects/oddite/tang584/flextrkr_runs/input_data/${TEST_NAME}"
+dir_input="/qfs/projects/oddite/tang584/flextrkr_runs/hm_input_data/${TEST_NAME}"
 
 
 PREPARE_CONFIG () {
 
     # Add '\' to each '/' in directory names
+    dir_raw1=$(echo ${dir_input} | sed 's_/_\\/_g')
     dir_input1=$(echo ${dir_input} | sed 's_/_\\/_g')
     dir_demo1=$(echo ${dir_demo} | sed 's_/_\\/_g')
     # Replace input directory names in example config file
-    sed 's/INPUT_DIR/'${dir_input1}'/g;s/TRACK_DIR/'${dir_demo1}'/g' ${config_example} > ${config_demo}
+    sed 's/INPUT_DIR/'${dir_input1}'/g;s/TRACK_DIR/'${dir_demo1}'/g;s/RAW_DATA/'${dir_raw1}'/g' ${config_example} > ${config_demo}
+    # sed 's/INPUT_DIR/'${dir_input1}'/g;s/TRACK_DIR/'${dir_demo1}'/g' ${config_example} > ${config_demo}
     echo 'Created new config file: '${config_demo}
 }
 
@@ -83,15 +85,14 @@ RUN_TRACKING () {
     # HDF5_PLUGIN_PATH=${HERMES_INSTALL_DIR}/lib:$TRACKER_VOL_DIR:$HDF5_PLUGIN_PATH \
 
     # valgrind --leak-check=full 
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TRACKER_VOL_DIR:$HDF5_PLUGIN_PATH
-    export HDF5_VOL_CONNECTOR="${VOL_NAME} under_vol=0;under_info={};path=${schema_file};level=2;format="
-    export HDF5_PLUGIN_PATH=${HERMES_INSTALL_DIR}/lib:$TRACKER_VOL_DIR
-    export HDF5_DRIVER=hdf5_hermes_vfd
-    export HERMES_CONF=$HERMES_CONF
-    export HERMES_CLIENT_CONF=$HERMES_CLIENT_CONF
-    export HDF5_DRIVER_CONFIG="true ${HERMES_PAGE_SIZE}"
-
-    srun -n1 -N1 --oversubscribe python ../runscripts/run_mcs_tbpfradar3d_wrf.py $config_demo &> ${FUNCNAME[0]}-dl.log
+    LD_LIBRARY_PATH=$TRACKER_VOL_DIR:$LD_LIBRARY_PATH \
+        HDF5_VOL_CONNECTOR="${VOL_NAME} under_vol=0;under_info={};path=${schema_file};level=2;format=" \
+        HDF5_PLUGIN_PATH=${HERMES_INSTALL_DIR}/lib:$TRACKER_VOL_DIR:$HDF5_PLUGIN_PATH \
+        HDF5_DRIVER=hdf5_hermes_vfd \
+        HERMES_CONF=$HERMES_CONF \
+        HERMES_CLIENT_CONF=$HERMES_CLIENT_CONF \
+        HDF5_DRIVER_CONFIG="true ${HERMES_PAGE_SIZE}" \
+        python ../runscripts/run_mcs_tbpfradar3d_wrf.py ${config_demo} &> ${FUNCNAME[0]}-dl.log
     
     set +x 
 
@@ -131,6 +132,9 @@ HERMES_DIS_CONFIG () {
     hostfile_path="$(pwd)/host_ip"
     sed -i "s#\$HOSTFILE_PATH#${hostfile_path}#" $HERMES_CONF
 
+    protocol="ucx+rc_verbs"
+    sed -i "s/\$PROTOCOL/${protocol}/" $HERMES_CONF
+
     network_device=`ucx_info -d | grep Device | cut -d' ' -f11 | grep mlx5 | head -1`
     sed -i "s/\$NETWORK_DEVICE/${network_device}/" $HERMES_CONF
 
@@ -148,7 +152,7 @@ HERMES_DIS_CONFIG () {
 STOP_DAEMON () {
 
     set -x
-    HERMES_CONF=$HERMES_CONF srun -n1 -N1 --oversubscribe \
+    HERMES_CONF=$HERMES_CONF srun -n1 -N1 --oversubscribe --mpi=pmi2 \
         ${HERMES_INSTALL_DIR}/bin/finalize_hermes &
 
     set +x
@@ -173,7 +177,7 @@ START_HERMES_DAEMON () {
 
 
     # LD_PRELOAD=${HERMES_INSTALL_DIR}/lib/libhdf5_hermes_vfd.so:$LD_PRELOAD \
-    HERMES_CONF=$HERMES_CONF srun -n$SLURM_JOB_NUM_NODES -w $hostlist --oversubscribe \
+    HERMES_CONF=$HERMES_CONF srun -n$SLURM_JOB_NUM_NODES -w $hostlist --oversubscribe --mpi=pmi2 \
         ${HERMES_INSTALL_DIR}/bin/hermes_daemon &> ${FUNCNAME[0]}.log &
 
     # echo ls -l $DEV1_DIR/hermes_slabs
@@ -186,13 +190,16 @@ START_HERMES_DAEMON () {
 }
 
 
-source ./load_hermes_deps.sh
+# source ./load_hermes_deps.sh
 source ./env_var.sh
 
 # # Activate PyFLEXTRKR conda environment
 echo 'Activating PyFLEXTRKR environment ...'
 source activate pyflextrkr_copy # flextrkr pyflextrkr
 
+export FLUSH_MEM=FALSE # TRUE for flush, FALSE for no flush
+export INVALID_OS_CACHE=FALSE # TRUE for invalid, FALSE for no invalid
+export CURR_TASK=""
 
 # export PYTHONLOGLEVEL=ERROR
 srun -n1 -N1 killall hermes_daemon
@@ -204,9 +211,7 @@ set -x
 HERMES_DIS_CONFIG
 START_HERMES_DAEMON
 
-export FLUSH_MEM=TRUE # TRUE for flush, FALSE for no flush
-export INVALID_OS_CACHE=TRUE # TRUE for invalid, FALSE for no invalid
-export CURR_TASK=""
+
 
 start_time=$(($(date +%s%N)/1000000))
 RUN_TRACKING

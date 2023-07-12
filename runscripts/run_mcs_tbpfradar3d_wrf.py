@@ -23,7 +23,7 @@ INVALID_OS_CACHE = os.environ.get("INVALID_OS_CACHE")
 
 def flush_os_cache(logger):
     logger.info(f"Flushing OS Cahces ...")
-    command = "echo 3 | sudo tee /proc/sys/vm/drop_caches"
+    command = "sudo /sbin/sysctl vm.drop_caches=3"
     subprocess.call(command, shell=True)
 
 
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     # Step 0 - Preprocess wrfout files to get Tb, rainrate, reflectivity
     if config['run_preprocess']:
         preprocess_wrf(config)
-        if INVALID_OS_CACHE == "TRUE":
+        if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
             flush_os_cache(logger)
             elapsed_time = (time.perf_counter() - start_time) * 1000

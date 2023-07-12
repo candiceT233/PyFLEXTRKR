@@ -28,22 +28,27 @@ TEST_NAME='wrf_tbradar'
 # Specify directory for the demo data
 dir_demo="/qfs/projects/oddite/tang584/flextrkr_runs/${TEST_NAME}" #NFS
 mkdir -p $dir_demo
+rm -rf $dir_demo/*
 # Example config file name
 # config_example='config_wrf_mcs_tbradar_example.yml'
-config_example='config_wrf_mcs_tbradar_short.yml'
+config_example='config_wrf_mcs_tbradar_seq.yml'
+# config_example='config_wrf_mcs_tbradar_short.yml'
 config_demo='config_wrf_mcs_tbradar_demo.yml'
 cp ./$config_demo $dir_demo
 # Demo input data directory
 dir_input="/qfs/projects/oddite/tang584/flextrkr_runs/input_data/${TEST_NAME}"
 
+# dir_script="/people/tang584/scripts/PyFLEXTRKR"
 
 PREPARE_CONFIG () {
 
     # Add '\' to each '/' in directory names
+    dir_raw1=$(echo ${dir_input} | sed 's_/_\\/_g')
     dir_input1=$(echo ${dir_input} | sed 's_/_\\/_g')
     dir_demo1=$(echo ${dir_demo} | sed 's_/_\\/_g')
     # Replace input directory names in example config file
-    sed 's/INPUT_DIR/'${dir_input1}'/g;s/TRACK_DIR/'${dir_demo1}'/g' ${config_example} > ${config_demo}
+    sed 's/INPUT_DIR/'${dir_input1}'/g;s/TRACK_DIR/'${dir_demo1}'/g;s/RAW_DATA/'${dir_raw1}'/g' ${config_example} > ${config_demo}
+    # sed 's/INPUT_DIR/'${dir_input1}'/g;s/TRACK_DIR/'${dir_demo1}'/g' ${config_example} > ${config_demo}
     echo 'Created new config file: '${config_demo}
 }
 
@@ -107,8 +112,9 @@ source ./env_var.sh
 echo 'Activating PyFLEXTRKR environment ...'
 source activate pyflextrkr_copy # flextrkr pyflextrkr
 
-
-# export PYTHONLOGLEVEL=ERROR
+export FLUSH_MEM=FALSE # TRUE for flush, FALSE for no flush
+export INVALID_OS_CACHE=FALSE # TRUE for invalid, FALSE for no invalid
+export CURR_TASK=""
 
 
 PREPARE_CONFIG
