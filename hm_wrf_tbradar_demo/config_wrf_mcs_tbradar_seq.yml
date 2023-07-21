@@ -16,7 +16,7 @@ run_speed : True # needed
 
 # Parallel processing set up
 # run_parallel: 1 (local cluster), 2 (Dask MPI)
-run_parallel: 0
+run_parallel: 1
 nprocesses : 1  # Number of processors to use if run_parallel=1
 # dask_tmp_dir: '/tmp'  # Dask temporary directory if run_parallel=1
 dask_tmp_dir: '/scratch/tang584'  # Dask temporary directory if run_parallel=1

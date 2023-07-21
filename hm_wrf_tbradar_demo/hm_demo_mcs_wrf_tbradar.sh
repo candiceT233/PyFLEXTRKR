@@ -3,7 +3,7 @@
 #SBATCH --partition=short
 #SBATCH --time=01:30:00
 #SBATCH -N 1
-#SBATCH -n 60
+#SBATCH -n 10
 #SBATCH --output=./R_%x.out
 #SBATCH --error=./R_%x.err
 
@@ -51,7 +51,8 @@ mkdir -p $dir_demo
 rm -rf $dir_demo/*
 # Example config file name
 # config_example='config_wrf_mcs_tbradar_example.yml'
-config_example='config_wrf_mcs_tbradar_short.yml'
+# config_example='config_wrf_mcs_tbradar_short.yml'
+config_example='config_wrf_mcs_tbradar_seq.yml'
 config_demo='config_wrf_mcs_tbradar_demo.yml'
 cp ./$config_demo $dir_demo
 # Demo input data directory
@@ -90,6 +91,8 @@ RUN_TRACKING () {
 
     # Run tracking
     echo 'Running PyFLEXTRKR w/ VFD ...'
+
+    export HDF5_DRIVER_CONFIG="true ${HERMES_PAGE_SIZE}"
 
     HDF5_DRIVER=hdf5_hermes_vfd \
         HDF5_PLUGIN_PATH=${HERMES_INSTALL_DIR}/lib:$HDF5_PLUGIN_PATH \
@@ -179,7 +182,7 @@ STOP_DAEMON () {
 
     set -x
     
-    ${HERMES_INSTALL_DIR}/bin/finalize_hermes &
+    HERMES_CONF=$HERMES_CONF ${HERMES_INSTALL_DIR}/bin/finalize_hermes &
 
     set +x
 }
@@ -198,14 +201,8 @@ START_HERMES_DAEMON () {
 
     echo "Starting hermes_daemon..."
     set -x
-    # export LD_PRELOAD=/lib64/libucs.so:$LD_PRELOAD
-    # export LD_LIBRARY_PATH=/lib64/ucx:$LD_LIBRARY_PATH
-    # -x LD_PRELOAD=/usr/lib64/libucs.so$LD_PRELOAD \
-    # -x UCX_NET_DEVICES=mlx5_0:1 \
-    # mpirun --host $ib_hostlist --npernode 1 \
-    #     -x HERMES_CONF=$HERMES_CONF ${HERMES_INSTALL_DIR}/bin/hermes_daemon &> ${FUNCNAME[0]}.log &
 
-    ${HERMES_INSTALL_DIR}/bin/hermes_daemon &> ${FUNCNAME[0]}.log &
+    HERMES_CONF=$HERMES_CONF ${HERMES_INSTALL_DIR}/bin/hermes_daemon &> ${FUNCNAME[0]}.log &
 
     # echo ls -l $DEV1_DIR/hermes_slabs
     sleep 5
@@ -240,7 +237,7 @@ log_file="${log_name}-hm.log"
 
 date
 
-MON_MEM &
+# MON_MEM &
 
 # spack load ior
 # timeout 45 mpirun -n 10 ior -w -r -t 1m -b 30g -o $dir_demo/ior_test_file
@@ -258,8 +255,7 @@ source activate pyflextrkr_copy # flextrkr pyflextrkr
 
 srun -n1 -N1 killall hermes_daemon
 
-export FLUSH_MEM=TRUE # TRUE for flush, FALSE for no flush
-export INVALID_OS_CACHE=TRUE # TRUE for invalid, FALSE for no invalid
+export FLUSH_MEM=FALSE # TRUE for flush, FALSE for no flush
 export CURR_TASK=""
 
 PREPARE_CONFIG
@@ -270,11 +266,15 @@ HERMES_DIS_CONFIG
 
 START_HERMES_DAEMON
 
+
+
+# ulimit -v $((200 * 1024 * 1024)) # in KB
+
 start_time=$(($(date +%s%N)/1000000))
-# srun -n1 -N1 --oversubscribe --mpi=pmi2 $(RUN_TRACKING)
 RUN_TRACKING
 duration=$(( $(date +%s%N)/1000000 - $start_time))
 echo "RUN_TRACKING done... $duration milliseconds elapsed."
+
 
 echo 'MCS_SRF_TBRADAR Demo completed!'
 date

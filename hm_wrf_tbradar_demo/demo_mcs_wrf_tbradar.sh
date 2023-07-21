@@ -3,9 +3,11 @@
 #SBATCH --partition=slurm
 #SBATCH --time=01:30:00
 #SBATCH -N 1
-#SBATCH -n 60
+#SBATCH -n 10
 #SBATCH --output=./R_%x.out
 #SBATCH --error=./R_%x.err
+# --cpus-per-task=4
+# --mem=8G
 
 ###############################################################################################
 # This script demonstrates running cell tracking on NEXRAD data (KHGX)
@@ -43,6 +45,9 @@ dir_input="/qfs/projects/oddite/tang584/flextrkr_runs/input_data/${TEST_NAME}"
 
 # dir_script="/people/tang584/scripts/PyFLEXTRKR"
 
+hostlist=$(echo "$NODE_NAMES" | tr '\n' ',')
+echo "hostlist: $hostlist"
+
 PREPARE_CONFIG () {
 
     # Add '\' to each '/' in directory names
@@ -57,7 +62,6 @@ PREPARE_CONFIG () {
 
 RUN_TRACKING () {
     # Run tracking
-
     echo 'Running PyFLEXTRKR ...'
     python ../runscripts/run_mcs_tbpfradar3d_wrf.py ${config_demo} &> ${FUNCNAME[0]}-demo.log
     echo 'Tracking is done.'
@@ -115,15 +119,20 @@ echo 'Activating PyFLEXTRKR environment ...'
 source activate pyflextrkr_copy # pyflextrkr flextrkr
 
 export FLUSH_MEM=TRUE # TRUE for flush, FALSE for no flush
-export INVALID_OS_CACHE=TRUE # TRUE for invalid, FALSE for no invalid
 export CURR_TASK=""
 
 PREPARE_CONFIG
+
+
+
+# ulimit -v $((10 * 1024 * 1024)) # in KB
 
 start_time=$(($(date +%s%N)/1000000))
 RUN_TRACKING
 duration=$(( $(date +%s%N)/1000000 - $start_time))
 echo "RUN_TRACKING done... $duration milliseconds elapsed."
+
+
 
 
 echo 'Demo completed!'

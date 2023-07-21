@@ -9,9 +9,9 @@
 
 USER=$(whoami)
 
-HERMES_VERSION="1dec_hermes"
+HERMES_VERSION="vfd_hermes"
 #8dec_hermes dec_hermes 1dec_hermes 1dec_debug_hermes
-# dec_hermes-vfd
+# vfd_hermes vfd_debug_hermes
 
 # User directories
 MNT_HOME=$HOME #/people/$USER
@@ -81,7 +81,7 @@ VOL_NAME="tracker"
 
 # export GLOG_minloglevel=2
 # export FLAGS_logtostderr=2
-export HDF5_USE_FILE_LOCKING='FALSE' #'TRUE' 'FALSE' 'BEST_EFFORT'
+export HDF5_USE_FILE_LOCKING='TRUE' #'TRUE' 'FALSE' 'BEST_EFFORT'
 # export MPICH_GNI_NDREG_ENTRIES=1024
 # export I_MPI_HYDRA_TOPOLIB=ipl
 # export I_MPI_PMI_LIBRARY=libpmi2.so
@@ -92,7 +92,7 @@ echo "HERMES_TRAIT_PATH = $HERMES_TRAIT_PATH"
 # export OFI_INTERFACE=ib0
 
 # export HERMES_PAGESIZE=8192 #for Hermes_VFD
-export HERMES_PAGE_SIZE=1048576 #for hermes_POSIX
+export HERMES_PAGE_SIZE=524288 #for hermes_POSIX
 # page size : 4096 8192 16384 32768 65536 131072 262144 524288 1048576 2097152 4194304 8388608
 # default : 1048576
 
