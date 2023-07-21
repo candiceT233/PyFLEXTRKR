@@ -9,7 +9,7 @@
 
 USER=$(whoami)
 
-HERMES_VERSION="vfd_debug_hermes"
+HERMES_VERSION="vfd_hermes"
 #8dec_hermes dec_hermes 1dec_hermes 1dec_debug_hermes
 # vfd_hermes vfd_debug_hermes
 

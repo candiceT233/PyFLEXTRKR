@@ -93,7 +93,6 @@ RUN_TRACKING () {
     echo 'Running PyFLEXTRKR w/ VFD ...'
 
     export HDF5_DRIVER_CONFIG="true ${HERMES_PAGE_SIZE}"
-    
 
     HDF5_DRIVER=hdf5_hermes_vfd \
         HDF5_PLUGIN_PATH=${HERMES_INSTALL_DIR}/lib:$HDF5_PLUGIN_PATH \
@@ -183,7 +182,7 @@ STOP_DAEMON () {
 
     set -x
     
-    ${HERMES_INSTALL_DIR}/bin/finalize_hermes &
+    HERMES_CONF=$HERMES_CONF ${HERMES_INSTALL_DIR}/bin/finalize_hermes &
 
     set +x
 }
@@ -238,7 +237,7 @@ log_file="${log_name}-hm.log"
 
 date
 
-MON_MEM &
+# MON_MEM &
 
 # spack load ior
 # timeout 45 mpirun -n 10 ior -w -r -t 1m -b 30g -o $dir_demo/ior_test_file

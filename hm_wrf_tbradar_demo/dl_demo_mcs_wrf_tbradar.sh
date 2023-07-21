@@ -84,15 +84,26 @@ RUN_TRACKING () {
 
     # HDF5_PLUGIN_PATH=${HERMES_INSTALL_DIR}/lib:$TRACKER_VOL_DIR:$HDF5_PLUGIN_PATH \
 
-    # valgrind --leak-check=full 
-    LD_LIBRARY_PATH=$TRACKER_VOL_DIR:$LD_LIBRARY_PATH \
-        HDF5_VOL_CONNECTOR="${VOL_NAME} under_vol=0;under_info={};path=${schema_file};level=2;format=" \
-        HDF5_PLUGIN_PATH=${HERMES_INSTALL_DIR}/lib:$TRACKER_VOL_DIR:$HDF5_PLUGIN_PATH \
-        HDF5_DRIVER=hdf5_hermes_vfd \
-        HERMES_CONF=$HERMES_CONF \
-        HERMES_CLIENT_CONF=$HERMES_CLIENT_CONF \
-        HDF5_DRIVER_CONFIG="true ${HERMES_PAGE_SIZE}" \
-        python ../runscripts/run_mcs_tbpfradar3d_wrf.py ${config_demo} &> ${FUNCNAME[0]}-dl.log
+    # # valgrind --leak-check=full 
+    # LD_LIBRARY_PATH=$TRACKER_VOL_DIR:$LD_LIBRARY_PATH \
+    #     HDF5_VOL_CONNECTOR="${VOL_NAME} under_vol=0;under_info={};path=${schema_file};level=2;format=" \
+    #     HDF5_PLUGIN_PATH=${HERMES_INSTALL_DIR}/lib:$TRACKER_VOL_DIR:$HDF5_PLUGIN_PATH \
+    #     HDF5_DRIVER=hdf5_hermes_vfd \
+    #     HERMES_CONF=$HERMES_CONF \
+    #     HERMES_CLIENT_CONF=$HERMES_CLIENT_CONF \
+    #     HDF5_DRIVER_CONFIG="true ${HERMES_PAGE_SIZE}" \
+    #     python ../runscripts/run_mcs_tbpfradar3d_wrf.py ${config_demo} &> ${FUNCNAME[0]}-dl.log
+
+    export LD_LIBRARY_PATH=$TRACKER_VOL_DIR:$LD_LIBRARY_PATH
+    export HDF5_VOL_CONNECTOR="${VOL_NAME} under_vol=0;under_info={};path=${schema_file};level=2;format="
+
+    export HDF5_DRIVER=hdf5_hermes_vfd
+    export HDF5_PLUGIN_PATH=$TRACKER_VOL_DIR:${HERMES_INSTALL_DIR}/lib:$HDF5_PLUGIN_PATH
+    export HERMES_CONF=$HERMES_CONF
+    export HERMES_CLIENT_CONF=$HERMES_CLIENT_CONF
+    export HDF5_DRIVER_CONFIG="true ${HERMES_PAGE_SIZE}"
+
+    python ../runscripts/run_mcs_tbpfradar3d_wrf.py ${config_demo} &> ${FUNCNAME[0]}-dl.log
     
     set +x 
 
@@ -119,10 +130,12 @@ MAKE_ANIMATION () {
 
 HERMES_DIS_CONFIG () {
 
-    echo "SLURM_JOB_NODELIST = $(echo $SLURM_JOB_NODELIST|scontrol show hostnames)"
-    NODE_NAMES=$(echo $SLURM_JOB_NODELIST|scontrol show hostnames)
+    # echo "SLURM_JOB_NODELIST = $(echo $SLURM_JOB_NODELIST|scontrol show hostnames)"
+    # NODE_NAMES=$(echo $SLURM_JOB_NODELIST|scontrol show hostnames)
+    NODE_NAMES=""
 
-    prefix="dc00" #dc dc00 a100-0
+    prefix="dc" #dc dc00 a100-0
+
     sed "s/\$HOST_BASE_NAME/\"${prefix}\"/" $HERMES_DEFAULT_CONF  > $HERMES_CONF
     mapfile -t node_range < <(echo "$NODE_NAMES" | sed "s/${prefix}//g")
     rpc_host_number_range="[$(printf "%s," "${node_range[@]}" | sed 's/,$//')]"
@@ -152,8 +165,8 @@ HERMES_DIS_CONFIG () {
 STOP_DAEMON () {
 
     set -x
-    HERMES_CONF=$HERMES_CONF srun -n1 -N1 --oversubscribe --mpi=pmi2 \
-        ${HERMES_INSTALL_DIR}/bin/finalize_hermes &
+    
+    HERMES_CONF=$HERMES_CONF ${HERMES_INSTALL_DIR}/bin/finalize_hermes &
 
     set +x
 }
@@ -167,18 +180,13 @@ START_HERMES_DAEMON () {
     # srun -n$SLURM_JOB_NUM_NODES -w $hostlist rm -rf $DEV1_DIR
     # srun -n$SLURM_JOB_NUM_NODES -w $hostlist mkdir -p $DEV1_DIR
 
-    echo `which ucx_info`
-
     rm -rf $DEV2_DIR $DEV1_DIR
     mkdir -p $DEV2_DIR $DEV1_DIR
 
     echo "Starting hermes_daemon..."
     set -x
 
-
-    # LD_PRELOAD=${HERMES_INSTALL_DIR}/lib/libhdf5_hermes_vfd.so:$LD_PRELOAD \
-    HERMES_CONF=$HERMES_CONF srun -n$SLURM_JOB_NUM_NODES -w $hostlist --oversubscribe --mpi=pmi2 \
-        ${HERMES_INSTALL_DIR}/bin/hermes_daemon &> ${FUNCNAME[0]}.log &
+    HERMES_CONF=$HERMES_CONF ${HERMES_INSTALL_DIR}/bin/hermes_daemon &> ${FUNCNAME[0]}.log &
 
     # echo ls -l $DEV1_DIR/hermes_slabs
     sleep 5
@@ -190,27 +198,25 @@ START_HERMES_DAEMON () {
 }
 
 
-# source ./load_hermes_deps.sh
+source ./load_hermes_deps.sh
 source ./env_var.sh
 
 # # Activate PyFLEXTRKR conda environment
 echo 'Activating PyFLEXTRKR environment ...'
 source activate pyflextrkr_copy # flextrkr pyflextrkr
 
-export FLUSH_MEM=FALSE # TRUE for flush, FALSE for no flush
-export INVALID_OS_CACHE=FALSE # TRUE for invalid, FALSE for no invalid
-export CURR_TASK=""
-
 # export PYTHONLOGLEVEL=ERROR
+# export PYTHONLOGLEVEL=INFO
+
 srun -n1 -N1 killall hermes_daemon
 
+export FLUSH_MEM=FALSE # TRUE for flush, FALSE for no flush
+export CURR_TASK=""
+
 PREPARE_CONFIG
-
 set -x
-
 HERMES_DIS_CONFIG
 START_HERMES_DAEMON
-
 
 
 start_time=$(($(date +%s%N)/1000000))

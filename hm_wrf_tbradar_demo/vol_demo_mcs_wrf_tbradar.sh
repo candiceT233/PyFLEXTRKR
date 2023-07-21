@@ -31,8 +31,8 @@ mkdir -p $dir_demo
 rm -rf $dir_demo/*
 # Example config file name
 # config_example='config_wrf_mcs_tbradar_example.yml'
-config_example='config_wrf_mcs_tbradar_seq.yml'
-# config_example='config_wrf_mcs_tbradar_short.yml'
+# config_example='config_wrf_mcs_tbradar_seq.yml'
+config_example='config_wrf_mcs_tbradar_short.yml'
 config_demo='config_wrf_mcs_tbradar_demo.yml'
 cp ./$config_demo $dir_demo
 # Demo input data directory
@@ -113,7 +113,6 @@ echo 'Activating PyFLEXTRKR environment ...'
 source activate pyflextrkr_copy # flextrkr pyflextrkr
 
 export FLUSH_MEM=FALSE # TRUE for flush, FALSE for no flush
-export INVALID_OS_CACHE=FALSE # TRUE for invalid, FALSE for no invalid
 export CURR_TASK=""
 
 
