@@ -57,11 +57,13 @@ dpe:
 tracing:
   enabled: false
   output: ""
+  # output: "/home/candicet233/scripts/PyFLEXTRKR/hm_wrf_tbradar_demo_local/hermes_io_trace.log"
 
 prefetch:
-  enabled: false
-  io_trace_path: ""
-  apriori_schema_path: ""
+  enabled: true
+  adaptor: true
+  # apriori_schema_path: "/home/candicet233/scripts/PyFLEXTRKR/hm_wrf_tbradar_demo_local/hermes_configs/apriori_1p1f1s_prefetch.yaml"
+  apriori_schema_path: "/home/candicet233/scripts/PyFLEXTRKR/hm_wrf_tbradar_demo_local/hermes_configs/custom_1p1f1s_prefetch.yaml"
   epoch_ms: 50
   is_mpi: false
   

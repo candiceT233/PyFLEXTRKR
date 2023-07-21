@@ -1,0 +1,12 @@
+0:
+  - bucket: /home/candicet233/experiments/candicet233/flextrkr_runs/input_data/wrf_tbradar/wrfout_rainrate_tb_zh_mh_2015-05-06_00:00:00.nc
+    prefetch:
+    - op_count_range: [60, 80]
+      promote_blobs: [0, 0]
+    - op_count_range: [120, 140]
+      promote_blobs: [0, 0]
+  - bucket: /home/candicet233/experiments/candicet233/flextrkr_runs/hm_wrf_tbradar/tracking/cloudid_20150506_000000.nc
+    prefetch:
+    - op_count_range: [320, 400]
+      promote_blobs: [0, 0]
+      demote_blobs: [1 , 1]

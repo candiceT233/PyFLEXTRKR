@@ -9,21 +9,21 @@
 
 USER=$(whoami)
 
-HERMES_VERSION="hermes_1"
-# debug_hermes_1 hermes_1
-# dec_hermes-vfd
+HERMES_VERSION="vfd_hermes"
+# debug_hermes_1 hermes_1 
+# vfd_hermes_debug vfd_hermes
+# pf_debug_hermes
 
 # User directories
 MNT_HOME=$HOME #/people/$USER
 INSTALL_DIR=$HOME/install
 DL_DIR=$HOME/download
-SCRIPT_DIR=$(pwd)
+SCRIPT_DIR=$MNT_HOME/scripts
 CONFIG_DIR=./hermes_configs
 
 # Hermes running dirs -----------
-STAGE_DIR=$MNT_HOME/hermes_stage
-HERMES_REPO=$STAGE_DIR/hermes
-MOCHI_REPO=$STAGE_DIR/mochi
+HERMES_REPO=$DL_DIR/hermes
+MOCHI_REPO=$DL_DIR/mochi
 SPACK_DIR=$MNT_HOME/spack
 
 # Hermes config files -----------
@@ -88,8 +88,12 @@ export HERMES_TRAIT_PATH=$HERMES_INSTALL_DIR/lib
 echo "HERMES_TRAIT_PATH = $HERMES_TRAIT_PATH"
 
 # export OFI_INTERFACE=ib0
-
-# export HERMES_PAGESIZE=8192 #for Hermes_VFD
+# export HERMES_PAGESIZE=524288 #for Hermes_VFD
 export HERMES_PAGE_SIZE=524288 #for hermes_POSIX
+
 # page size : 4096 8192 32768 65536 131072 262144 524288 1048576 4194304 8388608
 # default : 1048576
+
+# export HDF5_DRIVER_CONFIG="true ${HERMES_PAGE_SIZE}"
+# schema_file=data-stat-dl.yaml
+# export HDF5_VOL_CONNECTOR="${VOL_NAME} under_vol=0;under_info={};path=${schema_file};level=2;format=yaml" \

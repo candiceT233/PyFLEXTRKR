@@ -7,7 +7,7 @@ path_exclusions: ["/",
 file_page_size: 512KB # 4096KB 1MB 512KB
 base_adapter_mode: kDefault # kDefault kScratch
 
-# file_adapter_configs:
-#   - path: "/"
-#     page_size: 1MB
-#     mode: kDefault
+file_adapter_configs:
+  - path: "/"
+    page_size: 512KB
+    mode: kDefault

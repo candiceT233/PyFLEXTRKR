@@ -49,8 +49,8 @@ dir_demo="${exp_dir}/${TEST_NAME}" #local
 mkdir -p $dir_demo
 rm -rf $dir_demo/*
 # Example config file name
-config_example='config_wrf_mcs_tbradar_example.yml'
-# config_example='config_wrf_mcs_tbradar_short.yml'
+# config_example='config_wrf_mcs_tbradar_example.yml'
+config_example='config_wrf_mcs_tbradar_short.yml'
 config_demo='config_wrf_mcs_tbradar_demo.yml'
 cp ./$config_demo $dir_demo
 # Demo input data directory
@@ -118,7 +118,7 @@ log_file="${log_name}-demo.log"
 
 date
 
-MON_MEM &
+# MON_MEM &
 
 # spack load ior
 # timeout 45 srun -N1 -n10 ior -w -r -t 1m -b 30g 

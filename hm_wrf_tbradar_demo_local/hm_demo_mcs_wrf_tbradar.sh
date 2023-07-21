@@ -65,8 +65,8 @@ dir_demo="${exp_dir}/hm_${TEST_NAME}" #local
 mkdir -p $dir_demo
 rm -rf $dir_demo/*
 # Example config file name
-config_example='config_wrf_mcs_tbradar_example.yml'
-# config_example='config_wrf_mcs_tbradar_short.yml'
+# config_example='config_wrf_mcs_tbradar_example.yml'
+config_example='config_wrf_mcs_tbradar_short.yml'
 config_demo='config_wrf_mcs_tbradar_demo.yml'
 cp ./$config_demo $dir_demo
 # Demo input data directory
@@ -97,13 +97,13 @@ RUN_TRACKING () {
     #     HDF5_VOL_CONNECTOR="${VOL_NAME} under_vol=0;under_info={};path=${SCRIPT_DIR}/vol-${task_id}_${FUNCNAME[0]}.log;level=2;format=" \
     #     HDF5_PLUGIN_PATH=$DLIFE_VOL_DIR \
     #         srun -n1 -N1 --oversubscribe --mpi=pmi2 \
+    # HDF5_DRIVER_CONFIG="true ${HERMES_PAGESIZE}" \
     
     
     HDF5_DRIVER=hdf5_hermes_vfd \
         HDF5_PLUGIN_PATH=${HERMES_INSTALL_DIR}/lib:$HDF5_PLUGIN_PATH \
         HERMES_CONF=$HERMES_CONF \
         HERMES_CLIENT_CONF=$HERMES_CLIENT_CONF \
-        HDF5_DRIVER_CONFIG="true ${HERMES_PAGESIZE}" \
         python ../runscripts/run_mcs_tbpfradar3d_wrf.py ${config_demo} &> ${FUNCNAME[0]}-hm.log
     
     set +x 
@@ -131,8 +131,6 @@ MAKE_ANIMATION () {
 
 HERMES_DIS_CONFIG () {
 
-    # echo "SLURM_JOB_NODELIST = $(echo $SLURM_JOB_NODELIST|scontrol show hostnames)"
-    # NODE_NAMES=$(echo $SLURM_JOB_NODELIST|scontrol show hostnames)
     NODE_NAMES=""
 
     prefix="localhost" #dc dc00 a100-0
@@ -152,10 +150,6 @@ HERMES_DIS_CONFIG () {
     echo "node_range=${node_range[@]}"
     echo "rpc_host_number_range=$rpc_host_number_range"
 
-    # INTERCEPT_PATHS=$(sed "s/\$TEST_OUT_PATH/${TEST_OUT_PATH}/g" i${ITER_COUNT}_sim_files.txt)
-    # echo "$INTERCEPT_PATHS" >> $HERMES_CONF
-
-    # echo "]" >> $HERMES_CONF
 
 }
 
@@ -170,29 +164,16 @@ STOP_DAEMON () {
 
 
 START_HERMES_DAEMON () {
-    # --mca shmem_mmap_priority 80 \ \
-    # -mca mca_verbose stdout 
-    # -x UCX_NET_DEVICES=mlx5_0:1 \
-    # -mca btl self -mca pml ucx \
-    # srun -n$SLURM_JOB_NUM_NODES -w $hostlist rm -rf $DEV1_DIR
-    # srun -n$SLURM_JOB_NUM_NODES -w $hostlist mkdir -p $DEV1_DIR
 
     rm -rf $DEV2_DIR $DEV1_DIR
     mkdir -p $DEV2_DIR $DEV1_DIR
 
     echo "Starting hermes_daemon..."
     set -x
-    # export LD_PRELOAD=/lib64/libucs.so:$LD_PRELOAD
-    # export LD_LIBRARY_PATH=/lib64/ucx:$LD_LIBRARY_PATH
-    # -x LD_PRELOAD=/usr/lib64/libucs.so$LD_PRELOAD \
-    # -x UCX_NET_DEVICES=mlx5_0:1 \
-    # mpirun --host $ib_hostlist --npernode 1 \
-    #     -x HERMES_CONF=$HERMES_CONF ${HERMES_INSTALL_DIR}/bin/hermes_daemon &> ${FUNCNAME[0]}.log &
 
     HERMES_CONF=$HERMES_CONF ${HERMES_INSTALL_DIR}/bin/hermes_daemon &> ${FUNCNAME[0]}.log &
 
-    # echo ls -l $DEV1_DIR/hermes_slabs
-    sleep 5
+    sleep 2
     echo "Show hermes slabs : "
     # srun -n$SLURM_JOB_NUM_NODES -w $hostlist --oversubscribe ls -l $DEV1_DIR/*
     ls -l $DEV1_DIR/*
@@ -225,9 +206,9 @@ log_file="${log_name}-hm.log"
 
 date
 
-MON_MEM &
+# MON_MEM &
 
-source ./load_hermes_deps.sh
+# source ./load_hermes_deps.sh
 source ./env_var.sh
 
 # # Activate PyFLEXTRKR conda environment
