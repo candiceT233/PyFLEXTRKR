@@ -15,15 +15,33 @@ from pyflextrkr.robustmcs_radar import define_robust_mcs_radar
 from pyflextrkr.mapfeature_driver import mapfeature_driver
 from pyflextrkr.movement_speed import movement_speed
 
+# from dask_jobqueue import SLURMCluster
+from dask_mpi import initialize
 
+
+# Added for flushing memory
 import subprocess
 import time
-FLUSH_MEM = os.environ.get("FLUSH_MEM")
-INVALID_OS_CACHE = os.environ.get("INVALID_OS_CACHE")
+try:
+    FLUSH_MEM = os.environ.get("FLUSH_MEM")
+    SLURM_JOB_NUM_NODES = os.environ.get("SLURM_JOB_NUM_NODES")
+    SLURM_JOB_NUM_NODES = int(SLURM_JOB_NUM_NODES)
+    HOSTLIST = os.environ.get("HOSTLIST")
+except:
+    FLUSH_MEM = "FALSE"
+    SLURM_JOB_NUM_NODES = 1
+    HOSTLIST = "localhost"
+
 
 def flush_os_cache(logger):
     logger.info(f"Flushing OS Cahces ...")
-    command = "sudo /sbin/sysctl vm.drop_caches=3"
+    # command = "sudo /sbin/sysctl vm.drop_caches=3"
+    if SLURM_JOB_NUM_NODES <= 1:
+        command = "sudo /sbin/sysctl vm.drop_caches=3"
+    else:
+        command = f"srun -n{SLURM_JOB_NUM_NODES} -w {HOSTLIST} --oversubscribe sudo /sbin/sysctl vm.drop_caches=3"
+    
+    print(f"cmd: {command}")
     subprocess.call(command, shell=True)
 
 
@@ -64,15 +82,27 @@ if __name__ == '__main__':
         client = Client(cluster)
         client.run(setup_logging)
     elif config['run_parallel'] == 2:
-        # Dask-MPI
-        scheduler_file = os.path.join(os.environ["SCRATCH"], "scheduler.json")
-        client = Client(scheduler_file=scheduler_file)
+        mem_limit = 1048576 * 1024 * 8 # 32 GiB
+        # initialize(dashboard=False,memory_limit=mem_limit) # ,protocol="ucx",interface="ib0" scheduler_port=9000
+        initialize(dashboard=False)
+
+        client = Client()
         client.run(setup_logging)
+        print("Client scheduler:", client.scheduler)
+        # Dask-MPI
+        # scheduler_file = os.path.join(os.environ["SCRATCH"], "scheduler.json")
+        # client = Client(scheduler_file=scheduler_file)
+        # client.run(setup_logging)
+
+        
     else:
         logger.info(f"Running in serial.")
     
-    flush_os_cache_time = []
     
+    flush_os_cache_time = []
+
+
+            
     # Step 1 - Identify features
     if config['run_idfeature']:
         os.environ['CURR_TASK'] = 'run_idfeature'
@@ -162,3 +192,5 @@ if __name__ == '__main__':
     
     if FLUSH_MEM == "TRUE":
         logger.info("OS cache flush overhead : {:.2f} milliseconds".format(sum(flush_os_cache_time)))
+    
+    client.close()
