@@ -460,7 +460,7 @@ def match_drift_times(
         logger.info(f"Drift file used: {driftfile}")
 
         # Read the drift file
-        ds_drift = xr.open_dataset(driftfile, engine='netcdf4') # netcdf4 h5netcdf
+        ds_drift = xr.open_dataset(driftfile, engine='h5netcdf') # netcdf4 h5netcdf
         bt_drift = ds_drift['time']
         xdrifts = ds_drift['x'].values.squeeze()
         ydrifts = ds_drift['y'].values.squeeze()
