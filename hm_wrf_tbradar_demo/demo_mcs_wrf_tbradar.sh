@@ -1,9 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=demo_cell_nerxrad_0
-#SBATCH --partition=slurm
+#SBATCH --job-name=demo_wrf_tbradar_0
+#SBATCH --partition=short
 #SBATCH --time=01:30:00
-#SBATCH -N 1
-#SBATCH -n 10
+#SBATCH -N 2
+#SBATCH --ntasks=80
+#SBATCH --ntasks-per-node=40
 #SBATCH --output=./R_%x.out
 #SBATCH --error=./R_%x.err
 # --cpus-per-task=4
@@ -21,6 +22,10 @@
 #    in config_nexrad500m_example.yml to reduce the run time.
 ###############################################################################################
 
+# export SCRATCH=/scratch/tang584
+# export SCRATCH=.
+# export PMIX_MCA_gds=hash
+
 # # Specify directory for the demo data
 # dir_demo='/qfs/people/tang584/scripts/PyFLEXTRKR/hm_nexrad_demo' 
 # # Example config file name
@@ -30,23 +35,32 @@
 
 ## Prepare Test Directories
 TEST_NAME='wrf_tbradar'
+# FS_PREFIX="/qfs/projects/oddite/$USER" # NFS
+FS_PREFIX="/rcfs/projects/chess/$USER" # PFS
 
 # Specify directory for the demo data
-dir_demo="/qfs/projects/oddite/tang584/flextrkr_runs/${TEST_NAME}" #NFS
+dir_demo="${FS_PREFIX}/flextrkr_runs/${TEST_NAME}" # NFS
 mkdir -p $dir_demo
 rm -rf $dir_demo/*
 # Example config file name
 # config_example='config_wrf_mcs_tbradar_example.yml'
 config_example='config_wrf_mcs_tbradar_short.yml'
+# config_example='config_wrf_mcs_tbradar_seq.yml'
 config_demo='config_wrf_mcs_tbradar_demo.yml'
 cp ./$config_demo $dir_demo
 # Demo input data directory
-dir_input="/qfs/projects/oddite/tang584/flextrkr_runs/input_data/${TEST_NAME}"
+dir_input="${FS_PREFIX}/flextrkr_runs/input_data/${TEST_NAME}"
+
 
 # dir_script="/people/tang584/scripts/PyFLEXTRKR"
 
+## Prepare Slurm Host Names and IPs
+NODE_NAMES=`echo $SLURM_JOB_NODELIST|scontrol show hostnames`
+
 hostlist=$(echo "$NODE_NAMES" | tr '\n' ',')
 echo "hostlist: $hostlist"
+export HOSTLIST=$hostlist
+
 
 PREPARE_CONFIG () {
 
@@ -61,9 +75,30 @@ PREPARE_CONFIG () {
 }
 
 RUN_TRACKING () {
+    # Creating a scheduler file
+    rm -rf $SCRATCH/scheduler.json
+    set -x 
+    # mpirun -np 4 -host $hostlist dask-mpi --scheduler-file $SCRATCH/scheduler.json &
+
     # Run tracking
     echo 'Running PyFLEXTRKR ...'
-    python ../runscripts/run_mcs_tbpfradar3d_wrf.py ${config_demo} &> ${FUNCNAME[0]}-demo.log
+    # mpirun --host $hostlist --npernode 2 python ../runscripts/run_mcs_tbpfradar3d_wrf.py ${config_demo} &> ${FUNCNAME[0]}-demo.log
+    
+    if [[ $SLURM_JOB_NUM_NODES -gt 1 ]]; then
+        srun -n$SLURM_NTASKS -w $hostlist python ../runscripts/run_mcs_tbpfradar3d_wrf.py ${config_demo} &> ${FUNCNAME[0]}-demo.log
+        # srun ${SLURM_NTASKS} --ntasks-per-node=${SLURM_NTASKS_PER_NODE} -w $hostlist python ../runscripts/run_mcs_tbpfradar3d_wrf.py ${config_demo} &> ${FUNCNAME[0]}-demo.log
+    else
+        python ../runscripts/run_mcs_tbpfradar3d_wrf.py ${config_demo} &> ${FUNCNAME[0]}-demo.log
+    fi
+
+    # srun -n ${SLURM_NTASKS} --ntasks-per-node=${SLURM_NTASKS_PER_NODE} python ../runscripts/run_mcs_tbpfradar3d_wrf.py ${config_demo} &> ${FUNCNAME[0]}-demo.log
+
+    #--scheduler-file /scratch/tang584/scheduler.json 
+    
+    #&> ${FUNCNAME[0]}-demo.log
+    
+    SCRATCH
+
     echo 'Tracking is done.'
 
 }
@@ -86,30 +121,23 @@ MAKE_ANIMATION () {
 }
 
 MON_MEM () {
-log_name=mem_usage
-log_file="${log_name}-demo.log"
+    srun -n$SLURM_JOB_NUM_NODES -w $hostlist killall free
 
+    log_name=wrf_tbpf_mem_usage
+    log_file="${log_name}-demo.log"
     echo "Logging mem usage to $log_file"
 
     index=0  # Initialize the index variable
 
     free -h | awk -v idx="$index" 'BEGIN{OFS="\t"} NR==1{print "Index\t","Type\t" $0} NR==2{print idx, $0}' > "$log_file"
 
-    while true; do
-    # Run the `free` command and append the formatted output to the log file using `tee`
-    free -h | awk -v idx="$index" 'BEGIN{OFS="\t"} NR==2{print idx, $0}' >> "$log_file"
+    free -h -s 1 | grep --line-buffered Mem | sed --unbuffered = | paste - - >> "$log_file"
 
-    # Increment the index
-    ((index++))
-
-    # Sleep for a desired interval before running the loop again
-    sleep 1
-    done
 }
 
 date
 
-MON_MEM &
+# MON_MEM &
 
 # spack load ior
 # timeout 45 srun -N1 -n10 ior -w -r -t 1m -b 30g 
@@ -124,18 +152,19 @@ export CURR_TASK=""
 PREPARE_CONFIG
 
 
-
 # ulimit -v $((10 * 1024 * 1024)) # in KB
+
+srun -n$SLURM_JOB_NUM_NODES -w $hostlist --oversubscribe sudo /sbin/sysctl vm.drop_caches=3
 
 start_time=$(($(date +%s%N)/1000000))
 RUN_TRACKING
 duration=$(( $(date +%s%N)/1000000 - $start_time))
-echo "RUN_TRACKING done... $duration milliseconds elapsed."
+echo "RUN_TRACKING done... $duration milliseconds elapsed." | tee -a RUN_TRACKING-demo.log
 
 
 
 
-echo 'Demo completed!'
+echo 'MCS_WRF_TBRADAR Demo completed!'
 date
 
 sacct -j $SLURM_JOB_ID --format="JobID,JobName,Partition,CPUTime,AllocCPUS,State,ExitCode,MaxRSS,MaxVMSize"

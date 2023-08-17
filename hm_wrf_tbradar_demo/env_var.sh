@@ -9,7 +9,7 @@
 
 USER=$(whoami)
 
-HERMES_VERSION="vfd_hermes"
+HERMES_VERSION="1dec_hermes"
 #8dec_hermes dec_hermes 1dec_hermes 1dec_debug_hermes
 # vfd_hermes vfd_debug_hermes
 
@@ -18,7 +18,7 @@ MNT_HOME=$HOME #/people/$USER
 INSTALL_DIR=$HOME/install
 DL_DIR=$HOME/download
 SCRIPT_DIR=$MNT_HOME/scripts
-CONFIG_DIR=./hermes_configs
+CONFIG_DIR="$(pwd)/hermes_configs"
 
 # Hermes running dirs -----------
 STAGE_DIR=$MNT_HOME/hermes_stage
@@ -81,7 +81,7 @@ VOL_NAME="tracker"
 
 # export GLOG_minloglevel=2
 # export FLAGS_logtostderr=2
-export HDF5_USE_FILE_LOCKING='TRUE' #'TRUE' 'FALSE' 'BEST_EFFORT'
+export HDF5_USE_FILE_LOCKING='TRUE' #'TRUE' 'FALSE' 'BEST_EFFORT' # never use false
 # export MPICH_GNI_NDREG_ENTRIES=1024
 # export I_MPI_HYDRA_TOPOLIB=ipl
 # export I_MPI_PMI_LIBRARY=libpmi2.so

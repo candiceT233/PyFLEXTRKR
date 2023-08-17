@@ -1,9 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=hm_demo_cell_nerxrad_0
+#SBATCH --job-name=hm_demo_wrf_tbradar_0
 #SBATCH --partition=short
 #SBATCH --time=01:30:00
-#SBATCH -N 1
-#SBATCH -n 10
+#SBATCH -N 2
+#SBATCH --ntasks=80
+#SBATCH --ntasks-per-node=40
 #SBATCH --output=./R_%x.out
 #SBATCH --error=./R_%x.err
 
@@ -32,8 +33,11 @@ touch ./host_ip
 host_arr=()
 for node in $NODE_NAMES
 do
+    # "$node.ibnet:1"
+    # grep "$node.local" /etc/hosts | awk '{print $1}' >> ./host_ip
     host_arr+=("$node")
     nost_ip=`getent hosts "$node.ibnet" | awk '{ print $1 }'`
+    # echo "$node ibnet_ip = $nost_ip"
     echo "$nost_ip" >> ./host_ip
 done
 
@@ -43,21 +47,25 @@ echo "ib_hostlist: $ib_hostlist"
 
 
 ## Prepare Test Directories
-TEST_NAME='wrf_tbradar'
+TEST_NAME='wrf_tbradar_hm'
+# FS_PREFIX="/qfs/projects/oddite/$USER" # NFS
+FS_PREFIX="/rcfs/projects/chess/$USER" # PFS
 
 # Specify directory for the demo data
-dir_demo="/qfs/projects/oddite/tang584/flextrkr_runs/hm_${TEST_NAME}" #NFS
+dir_demo="${FS_PREFIX}/flextrkr_runs/${TEST_NAME}" # NFS
 mkdir -p $dir_demo
 rm -rf $dir_demo/*
 # Example config file name
 # config_example='config_wrf_mcs_tbradar_example.yml'
-# config_example='config_wrf_mcs_tbradar_short.yml'
-config_example='config_wrf_mcs_tbradar_seq.yml'
+config_example='config_wrf_mcs_tbradar_short.yml'
+# config_example='config_wrf_mcs_tbradar_seq.yml'
 config_demo='config_wrf_mcs_tbradar_demo.yml'
 cp ./$config_demo $dir_demo
 # Demo input data directory
-dir_input="/qfs/projects/oddite/tang584/flextrkr_runs/hm_input_data/${TEST_NAME}"
+dir_input="${FS_PREFIX}/flextrkr_runs/input_data/${TEST_NAME}"
 
+echo "dir_demo = $dir_demo"
+echo "dir_input = $dir_input"
 
 PREPARE_CONFIG () {
 
@@ -72,54 +80,36 @@ PREPARE_CONFIG () {
 }
 
 RUN_TRACKING () {
-    # echo "Generate empty files"
-    # mkdir -p $dir_demo/tracking
-    # mkdir -p $dir_demo/stats
-    # mkdir -p $dir_demo/mcstracking/20150506.0000_20150506.0800
-    # for i in {0..8}; do
-    #     # Generate empty cloudid files
-    #     id_file="cloudid_20150506_0${i}0000.nc"
-    #     touch $dir_demo/tracking/$id_file
-    #     # Perform any desired operations with the generated number
-    # done
-    # for i in {1..8}; do
-    #     track_file="track_20150506_0${i}0000.nc"
-    #     touch $dir_demo/tracking/$track_file
-    # done
-    # echo "ls -l $dir_demo/tracking/*"
-    # ls -l $dir_demo/tracking/*
 
     # Run tracking
-    echo 'Running PyFLEXTRKR w/ VFD ...'
+    set -x
+    if [[ $SLURM_JOB_NUM_NODES -gt 1 ]]; then
+        echo "Running PyFLEXTRKR w/ Hermes VFD on multiple nodes ..."
+        export HDF5_DRIVER=hdf5_hermes_vfd
+        export HDF5_PLUGIN_PATH=${HERMES_INSTALL_DIR}/lib:$HDF5_PLUGIN_PATH
+        export HERMES_CONF=$HERMES_CONF
+        export HERMES_CLIENT_CONF=$HERMES_CLIENT_CONF
+        srun -n$SLURM_NTASKS -w $hostlist --oversubscribe python ../runscripts/run_mcs_tbpfradar3d_wrf.py ${config_demo} &> ${FUNCNAME[0]}-hm.log
 
-    export HDF5_DRIVER_CONFIG="true ${HERMES_PAGE_SIZE}"
+        # HDF5_DRIVER=hdf5_hermes_vfd \
+        #     HDF5_PLUGIN_PATH=${HERMES_INSTALL_DIR}/lib:$HDF5_PLUGIN_PATH \
+        #     HERMES_CONF=$HERMES_CONF \
+        #     HERMES_CLIENT_CONF=$HERMES_CLIENT_CONF \
+        # srun -n$SLURM_NTASKS -w $hostlist --oversubscribe python ../runscripts/run_mcs_tbpfradar3d_wrf.py ${config_demo} &> ${FUNCNAME[0]}-hm.log
 
-    HDF5_DRIVER=hdf5_hermes_vfd \
-        HDF5_PLUGIN_PATH=${HERMES_INSTALL_DIR}/lib:$HDF5_PLUGIN_PATH \
-        HERMES_CONF=$HERMES_CONF \
-        HERMES_CLIENT_CONF=$HERMES_CLIENT_CONF \
-        python ../runscripts/run_mcs_tbpfradar3d_wrf.py ${config_demo} &> ${FUNCNAME[0]}-hm.log
-
-    # LD_LIBRARY_PATH=$TRACKER_VOL_DIR:$LD_LIBRARY_PATH \
-    #     HDF5_VOL_CONNECTOR="${VOL_NAME} under_vol=0;under_info={};path=${SCRIPT_DIR}/vol-${task_id}_${FUNCNAME[0]}.log;level=2;format=" \
-    #     HDF5_DRIVER=hdf5_hermes_vfd \
-    #     HDF5_PLUGIN_PATH=$TRACKER_VOL_DIR:${HERMES_INSTALL_DIR}/lib \
+    else
+        echo "Running PyFLEXTRKR w/ Hermes VFD on single node ..."
+        HDF5_DRIVER=hdf5_hermes_vfd \
+            HDF5_PLUGIN_PATH=${HERMES_INSTALL_DIR}/lib:$HDF5_PLUGIN_PATH \
+            HERMES_CONF=$HERMES_CONF \
+            HERMES_CLIENT_CONF=$HERMES_CLIENT_CONF \
+            python ../runscripts/run_mcs_tbpfradar3d_wrf.py ${config_demo} &> ${FUNCNAME[0]}-hm.log
+    fi
 
     # LD_LIBRARY_PATH=$TRACKER_VOL_DIR:$LD_LIBRARY_PATH \
     #     HDF5_VOL_CONNECTOR="${VOL_NAME} under_vol=0;under_info={};path=${SCRIPT_DIR}/vol-${task_id}_${FUNCNAME[0]}.log;level=2;format=" \
     #     HDF5_PLUGIN_PATH=$TRACKER_VOL_DIR \
     #         srun -n1 -N1 --oversubscribe --mpi=pmi2 \
-    
-    
-    # HDF5_DRIVER=hdf5_hermes_vfd \
-    #     HDF5_PLUGIN_PATH=${HERMES_INSTALL_DIR}/lib:$HDF5_PLUGIN_PATH \
-    #     HERMES_CONF=$HERMES_CONF \
-    #     HERMES_CLIENT_CONF=$HERMES_CLIENT_CONF \
-    #     HDF5_DRIVER_CONFIG="true ${HERMES_PAGESIZE}" \
-
-    #HERMES_ADAPTER_MODE=kScratch \
-    
-
     
     set +x 
 
@@ -146,30 +136,21 @@ MAKE_ANIMATION () {
 
 HERMES_DIS_CONFIG () {
 
-    # echo "SLURM_JOB_NODELIST = $(echo $SLURM_JOB_NODELIST|scontrol show hostnames)"
-    # NODE_NAMES=$(echo $SLURM_JOB_NODELIST|scontrol show hostnames)
-    NODE_NAMES=""
-
-    prefix="dc" #dc dc00 a100-0
-
-    sed "s/\$HOST_BASE_NAME/\"${prefix}\"/" $HERMES_DEFAULT_CONF  > $HERMES_CONF
-    mapfile -t node_range < <(echo "$NODE_NAMES" | sed "s/${prefix}//g")
-    rpc_host_number_range="[$(printf "%s," "${node_range[@]}" | sed 's/,$//')]"
-    # rpc_host_number_range="[]"
-    sed -i "s/\$HOST_NUMBER_RANGE/${rpc_host_number_range}/" $HERMES_CONF
-
     hostfile_path="$(pwd)/host_ip"
-    sed -i "s#\$HOSTFILE_PATH#${hostfile_path}#" $HERMES_CONF
+    sed "s#\$HOSTFILE_PATH#${hostfile_path}#" $HERMES_DEFAULT_CONF  > $HERMES_CONF
 
     protocol="ucx+rc_verbs"
+    # protocol="tcp"
     sed -i "s/\$PROTOCOL/${protocol}/" $HERMES_CONF
 
-    network_device=`ucx_info -d | grep Device | cut -d' ' -f11 | grep mlx5 | head -1`
+    if [ $protocol == "tcp" ]; then
+        network_device=""
+    else
+        network_device=`ucx_info -d | grep Device | cut -d' ' -f11 | grep mlx5 | head -1`
+    fi
     sed -i "s/\$NETWORK_DEVICE/${network_device}/" $HERMES_CONF
 
     echo "hostfile_path=${hostfile_path}"
-    echo "node_range=${node_range[@]}"
-    echo "rpc_host_number_range=$rpc_host_number_range"
 
     # INTERCEPT_PATHS=$(sed "s/\$TEST_OUT_PATH/${TEST_OUT_PATH}/g" i${ITER_COUNT}_sim_files.txt)
     # echo "$INTERCEPT_PATHS" >> $HERMES_CONF
@@ -181,8 +162,8 @@ HERMES_DIS_CONFIG () {
 STOP_DAEMON () {
 
     set -x
-    
-    HERMES_CONF=$HERMES_CONF ${HERMES_INSTALL_DIR}/bin/finalize_hermes &
+    HERMES_CONF=$HERMES_CONF srun -n$SLURM_JOB_NUM_NODES -w $hostlist --oversubscribe \
+        ${HERMES_INSTALL_DIR}/bin/finalize_hermes &
 
     set +x
 }
@@ -199,40 +180,46 @@ START_HERMES_DAEMON () {
     rm -rf $DEV2_DIR $DEV1_DIR
     mkdir -p $DEV2_DIR $DEV1_DIR
 
-    echo "Starting hermes_daemon..."
     set -x
 
-    HERMES_CONF=$HERMES_CONF ${HERMES_INSTALL_DIR}/bin/hermes_daemon &> ${FUNCNAME[0]}.log &
+    if [[ $SLURM_JOB_NUM_NODES -gt 1 ]]; then
+        echo "Starting hermes_daemon on multiple nodes ..."
 
-    # echo ls -l $DEV1_DIR/hermes_slabs
-    sleep 5
-    echo "Show hermes slabs : "
-    # srun -n$SLURM_JOB_NUM_NODES -w $hostlist --oversubscribe ls -l $DEV1_DIR/*
-    ls -l $DEV1_DIR/*
-    ls -l $DEV2_DIR/*
+        HERMES_CONF=$HERMES_CONF srun -n$SLURM_JOB_NUM_NODES -w $hostlist --oversubscribe \
+            ${HERMES_INSTALL_DIR}/bin/hermes_daemon & #> ${FUNCNAME[0]}.log &
+
+        # mpirun --host $ib_hostlist --npernode 1 \
+        #     -x HERMES_CONF=$HERMES_CONF $HERMES_INSTALL_DIR/bin/hermes_daemon & #> ${FUNCNAME[0]}.log &
+
+        sleep 5
+        # echo "Show hermes slabs : "
+        # srun -n$SLURM_JOB_NUM_NODES -w $hostlist ls -l $DEV1_DIR/*; ls -l $DEV2_DIR/*
+
+    else
+        echo "Starting hermes_daemon on single node ..."
+        HERMES_CONF=$HERMES_CONF ${HERMES_INSTALL_DIR}/bin/hermes_daemon &> ${FUNCNAME[0]}.log &
+        sleep 5
+        # echo "Show hermes slabs : "
+        # ls -l $DEV1_DIR/*
+        # ls -l $DEV2_DIR/*
+    fi
+
     set +x
 }
 
 MON_MEM () {
-log_name=mem_usage
-log_file="${log_name}-hm.log"
+    srun -n$SLURM_JOB_NUM_NODES -w $hostlist killall free
 
+    log_name=wrf_tbpf_mem_usage
+    log_file="${log_name}-demo.log"
     echo "Logging mem usage to $log_file"
 
     index=0  # Initialize the index variable
 
     free -h | awk -v idx="$index" 'BEGIN{OFS="\t"} NR==1{print "Index\t","Type\t" $0} NR==2{print idx, $0}' > "$log_file"
 
-    while true; do
-    # Run the `free` command and append the formatted output to the log file using `tee`
-    free -h | awk -v idx="$index" 'BEGIN{OFS="\t"} NR==2{print idx, $0}' >> "$log_file"
+    free -h -s 1 | grep --line-buffered Mem | sed --unbuffered = | paste - - >> "$log_file"
 
-    # Increment the index
-    ((index++))
-
-    # Sleep for a desired interval before running the loop again
-    sleep 1
-    done
 }
 
 date
@@ -266,17 +253,16 @@ HERMES_DIS_CONFIG
 
 START_HERMES_DAEMON
 
-
-
 # ulimit -v $((200 * 1024 * 1024)) # in KB
+srun -n$SLURM_JOB_NUM_NODES -w $hostlist --oversubscribe sudo /sbin/sysctl vm.drop_caches=3
 
 start_time=$(($(date +%s%N)/1000000))
 RUN_TRACKING
 duration=$(( $(date +%s%N)/1000000 - $start_time))
-echo "RUN_TRACKING done... $duration milliseconds elapsed."
+echo "RUN_TRACKING done... $duration milliseconds elapsed." | tee -a RUN_TRACKING-hm.log
 
 
-echo 'MCS_SRF_TBRADAR Demo completed!'
+echo 'MCS_WRF_TBRADAR Demo completed!'
 date
 
 
