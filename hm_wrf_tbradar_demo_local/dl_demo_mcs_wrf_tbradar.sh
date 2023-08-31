@@ -1,14 +1,4 @@
 #!/bin/bash
-#SBATCH --job-name=dl_demo_cell_nerxrad_0
-#SBATCH --partition=short
-#SBATCH --time=00:30:00
-#SBATCH -N 1
-#SBATCH -n 9
-#SBATCH --output=./R_%x.out
-#SBATCH --error=./R_%x.err
-
-## --exclude=a100-[05]
-## --exclude=dc[009-099,119]
 
 ###############################################################################################
 # This script demonstrates running cell tracking on NEXRAD data (KHGX)
@@ -62,17 +52,17 @@ TEST_NAME='wrf_tbradar'
 exp_dir="$HOME/experiments/$USER/flextrkr_runs"
 
 # Specify directory for the demo data
-dir_demo="${exp_dir}/hm_${TEST_NAME}" #local
+dir_demo="${exp_dir}/${TEST_NAME}" #local
 
 mkdir -p $dir_demo
-# rm -rf $dir_demo/*
+rm -rf $dir_demo/*
 # Example config file name
 # config_example='config_wrf_mcs_tbradar_example.yml'
 config_example='config_wrf_mcs_tbradar_short.yml'
 config_demo='config_wrf_mcs_tbradar_demo.yml'
 cp ./$config_demo $dir_demo
 # Demo input data directory
-dir_input="/qfs/projects/oddite/tang584/flextrkr_runs/input_data/${TEST_NAME}"
+dir_input="${exp_dir}/input_data/${TEST_NAME}"
 
 
 PREPARE_CONFIG () {
@@ -96,17 +86,22 @@ RUN_TRACKING () {
 
     # HDF5_PLUGIN_PATH=${HERMES_INSTALL_DIR}/lib:$TRACKER_VOL_DIR:$HDF5_PLUGIN_PATH \
 
-    # valgrind --leak-check=full 
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TRACKER_VOL_DIR:$HDF5_PLUGIN_PATH
-    export HDF5_VOL_CONNECTOR="${VOL_NAME} under_vol=0;under_info={};path=${schema_file};level=2;format="
-    export HDF5_PLUGIN_PATH=${HERMES_INSTALL_DIR}/lib:$TRACKER_VOL_DIR
-    export HDF5_DRIVER=hdf5_hermes_vfd
-    export HERMES_CONF=$HERMES_CONF
-    export HERMES_CLIENT_CONF=$HERMES_CLIENT_CONF
-    export HDF5_DRIVER_CONFIG="true ${HERMES_PAGE_SIZE}"
+    # # valgrind --leak-check=full 
 
-    python ../runscripts/run_mcs_tbpfradar3d_wrf.py $config_demo &> ${FUNCNAME[0]}-dl.log
-    
+    echo "TRACKER_VOL_DIR = $TRACKER_VOL_DIR"
+
+    set -x
+
+
+    LD_LIBRARY_PATH=$TRACKER_VOL_DIR:$LD_LIBRARY_PATH \
+        HDF5_VOL_CONNECTOR="${VOL_NAME} under_vol=0;under_info={};path=${schema_file};level=2;format=" \
+        HDF5_DRIVER=hdf5_hermes_vfd \
+        HDF5_PLUGIN_PATH=$HERMES_INSTALL_DIR/lib:$TRACKER_VOL_DIR:$HDF5_PLUGIN_PATH \
+        HERMES_CONF=$HERMES_CONF \
+        HERMES_CLIENT_CONF=$HERMES_CLIENT_CONF \
+        HDF5_DRIVER_CONFIG="true ${HERMES_PAGE_SIZE}" \
+        python ../runscripts/run_mcs_tbpfradar3d_wrf.py ${config_demo} &> ${FUNCNAME[0]}-dl.log
+
     set +x 
 
     echo 'Tracking is done.'
@@ -136,9 +131,10 @@ HERMES_DIS_CONFIG () {
 
     prefix="localhost" #dc dc00 a100-0
     sed "s/\$HOST_BASE_NAME/\"${prefix}\"/" $HERMES_DEFAULT_CONF  > $HERMES_CONF
-    mapfile -t node_range < <(echo "$NODE_NAMES" | sed "s/${prefix}//g")
-    rpc_host_number_range="[$(printf "%s," "${node_range[@]}" | sed 's/,$//')]"
-    # rpc_host_number_range="[]"
+    
+    # mapfile -t node_range < <(echo "$NODE_NAMES" | sed "s/${prefix}//g")
+    # rpc_host_number_range="[$(printf "%s," "${node_range[@]}" | sed 's/,$//')]"
+    rpc_host_number_range="[]"
     sed -i "s/\$HOST_NUMBER_RANGE/${rpc_host_number_range}/" $HERMES_CONF
 
     hostfile_path="$(pwd)/host_ip"
@@ -190,7 +186,8 @@ START_HERMES_DAEMON () {
 }
 
 
-source ./load_hermes_deps.sh
+
+# source ./load_hermes_deps.sh
 source ./env_var.sh
 
 # # Activate PyFLEXTRKR conda environment
@@ -205,11 +202,10 @@ PREPARE_CONFIG
 
 set -x
 
-HERMES_DIS_CONFIG
+# HERMES_DIS_CONFIG
 START_HERMES_DAEMON
 
-export FLUSH_MEM=TRUE # TRUE for flush, FALSE for no flush
-export INVALID_OS_CACHE=TRUE # TRUE for invalid, FALSE for no invalid
+export FLUSH_MEM=FALSE # TRUE for flush, FALSE for no flush
 export CURR_TASK=""
 
 start_time=$(($(date +%s%N)/1000000))
@@ -225,4 +221,4 @@ echo 'Demo completed!'
 rm -rf $dir_demo/core.*
 rm -rf $dir_demo/device*.hermes
 
-cat RUN_TRACKING-dl.log | grep "H5FD__hermes" > RUN_TRACKING-dl-hm.log
+# cat RUN_TRACKING-dl.log | grep "H5FD__hermes" > RUN_TRACKING-dl-hm.log
