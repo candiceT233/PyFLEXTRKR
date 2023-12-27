@@ -50,6 +50,7 @@ def define_robust_mcs_pf(config):
     logger.debug(("mcspfstats_file: ", mcspfstats_file))
 
     ds_pf = xr.open_dataset(mcspfstats_file,
+                            engine="netcdf4",
                             mask_and_scale=False,
                             decode_times=False,)
     ntracks = ds_pf.dims[tracks_dimname]

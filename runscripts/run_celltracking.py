@@ -11,6 +11,31 @@ from pyflextrkr.gettracks import gettracknumbers
 from pyflextrkr.trackstats_driver import trackstats_driver
 from pyflextrkr.mapfeature_driver import mapfeature_driver
 
+# Added for flushing memory
+import subprocess
+import time
+try:
+    FLUSH_MEM = os.environ.get("FLUSH_MEM")
+    SLURM_JOB_NUM_NODES = os.environ.get("SLURM_JOB_NUM_NODES")
+    SLURM_JOB_NUM_NODES = int(SLURM_JOB_NUM_NODES)
+    HOSTLIST = os.environ.get("HOSTLIST")
+except:
+    FLUSH_MEM = "FALSE"
+    SLURM_JOB_NUM_NODES = 1
+    HOSTLIST = "localhost"
+
+
+def flush_os_cache(logger):
+    logger.info(f"Flushing OS Cahces ...")
+    # command = "sudo /sbin/sysctl vm.drop_caches=3"
+    if SLURM_JOB_NUM_NODES <= 1:
+        command = "sudo /sbin/sysctl vm.drop_caches=3"
+    else:
+        command = f"srun -n{SLURM_JOB_NUM_NODES} -w {HOSTLIST} --oversubscribe sudo /sbin/sysctl vm.drop_caches=3"
+    
+    print(f"cmd: {command}")
+    subprocess.call(command, shell=True)
+    
 if __name__ == '__main__':
 
     # Set the logging message level
@@ -38,11 +63,17 @@ if __name__ == '__main__':
         client.run(setup_logging)
     else:
         logger.info(f"Running in serial.")
+    
+    flush_os_cache_time = []
 
     # Step 1 - Identify features
     if config['run_idfeature']:
         idfeature_driver(config)
-
+        if FLUSH_MEM == "TRUE":
+            start_time = time.perf_counter()
+            flush_os_cache(logger)
+            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
+            
     # Step 2 - Run advection calculation
     if config['run_advection']:
         logger.info('Calculating domain mean advection.')
@@ -52,18 +83,43 @@ if __name__ == '__main__':
                     f'{config["startdate"]}_{config["enddate"]}.nc'
     config.update({"driftfile": driftfile})
 
+    if FLUSH_MEM == "TRUE":
+        start_time = time.perf_counter()
+        flush_os_cache(logger)
+        flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
+
     # Step 3 - Link features in time adjacent files
     if config['run_tracksingle']:
         tracksingle_driver(config)
-
+        if FLUSH_MEM == "TRUE":
+            start_time = time.perf_counter()
+            flush_os_cache(logger)
+            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
+            
     # Step 4 - Track features through the entire dataset
     if config['run_gettracks']:
         tracknumbers_filename = gettracknumbers(config)
-
+        if FLUSH_MEM == "TRUE":
+            start_time = time.perf_counter()
+            flush_os_cache(logger)
+            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
+            
     # Step 5 - Calculate track statistics
     if config['run_trackstats']:
         trackstats_filename = trackstats_driver(config)
-
+        if FLUSH_MEM == "TRUE":
+            start_time = time.perf_counter()
+            flush_os_cache(logger)
+            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
+            
     # Step 6 - Map tracking to pixel files
     if config['run_mapfeature']:
         mapfeature_driver(config)
+        if FLUSH_MEM == "TRUE":
+            start_time = time.perf_counter()
+            flush_os_cache(logger)
+            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
+
+    
+    if FLUSH_MEM == "TRUE":
+        logger.info("OS cache flush overhead : {:.2f} milliseconds".format(sum(flush_os_cache_time)))
