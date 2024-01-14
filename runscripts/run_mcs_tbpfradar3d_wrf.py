@@ -41,12 +41,12 @@ def flush_os_cache(logger):
     logger.info(f"Flushing OS Cahces ...")
     # command = "sudo /sbin/sysctl vm.drop_caches=3"
     if SLURM_JOB_NUM_NODES <= 1:
-        command = "sudo /sbin/sysctl vm.drop_caches=3"
+        command = "drop_caches"
     else:
-        command = f"srun -n{SLURM_JOB_NUM_NODES} -w {HOSTLIST} --oversubscribe sudo /sbin/sysctl vm.drop_caches=3"
+        command = f"mpirun -np {SLURM_JOB_NUM_NODES} --host {HOSTLIST} drop_caches"
     
     print(f"cmd: {command}")
-    subprocess.call(command, shell=True)
+    subprocess.run(command, shell=True)
 
 
 if __name__ == '__main__':
