@@ -2,6 +2,10 @@ import os
 import sys
 import logging
 import dask
+# with dask.config.set({'temporary_directory': '/tmp/run_mcs_tbpfradar3d_wrf'}):
+# make tmp directory
+
+
 from dask.distributed import Client, LocalCluster
 from pyflextrkr.ft_utilities import load_config, setup_logging
 from pyflextrkr.preprocess_wrf_tb_rainrate_reflectivity import preprocess_wrf
@@ -84,7 +88,9 @@ if __name__ == '__main__':
     elif config['run_parallel'] == 2:
         mem_limit = 1048576 * 1024 * 8 # 32 GiB
         # initialize(dashboard=False,memory_limit=mem_limit) # ,protocol="ucx",interface="ib0" scheduler_port=9000
-        initialize(dashboard=False)
+        if not os.path.exists('/tmp/run_mcs_tbpfradar3d_wrf'):
+            os.mkdir('/tmp/run_mcs_tbpfradar3d_wrf')
+        initialize(dashboard=False, local_directory="/tmp/run_mcs_tbpfradar3d_wrf")
 
         client = Client()
         client.run(setup_logging)
@@ -93,11 +99,11 @@ if __name__ == '__main__':
         # scheduler_file = os.path.join(os.environ["SCRATCH"], "scheduler.json")
         # client = Client(scheduler_file=scheduler_file)
         # client.run(setup_logging)
-
         
     else:
         logger.info(f"Running in serial.")
     
+    # dask.config.set({'temporary_directory': '/tmp/run_mcs_tbpfradar3d_wrf'})
     
     flush_os_cache_time = []
 
