@@ -1,4 +1,4 @@
-import os
+import os, pathlib
 import sys
 import logging
 import dask
@@ -57,6 +57,9 @@ def set_curr_task_file(task):
     if workflow_name and path_for_task_files:
         vfd_task_file = os.path.join(path_for_task_files, f"{workflow_name}_vfd.curr_task")
         vol_task_file = os.path.join(path_for_task_files, f"{workflow_name}_vol.curr_task")
+        # Create file and parent file if it does not exist
+        pathlib.Path(vfd_task_file).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(vol_task_file).mkdir(parents=True, exist_ok=True)
 
     # vfd_task_file = /tmp/$USER/pyflextrkr_vfd.curr_task
     
