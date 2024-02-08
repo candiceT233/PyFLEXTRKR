@@ -122,7 +122,7 @@ if __name__ == '__main__':
     
     # Step 1 - Identify features
     if config['run_idfeature']:
-        set_curr_task('run_idfeature')
+        set_curr_task_file('run_idfeature')
         idfeature_driver(config)
         if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
     # Step 2 - Link features in time adjacent files
     if config['run_tracksingle']:
-        set_curr_task('run_tracksingle')
+        set_curr_task_file('run_tracksingle')
         tracksingle_driver(config)
         if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
@@ -140,7 +140,7 @@ if __name__ == '__main__':
 
     # Step 3 - Track features through the entire dataset
     if config['run_gettracks']:
-        set_curr_task('run_gettracks')
+        set_curr_task_file('run_gettracks')
         tracknumbers_filename = gettracknumbers(config)
         if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
@@ -149,7 +149,7 @@ if __name__ == '__main__':
             
     # Step 4 - Calculate track statistics
     if config['run_trackstats']:
-        set_curr_task('run_trackstats')
+        set_curr_task_file('run_trackstats')
         trackstats_filename = trackstats_driver(config)
         if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
@@ -158,7 +158,7 @@ if __name__ == '__main__':
             
     # Step 5 - Identify MCS using Tb
     if config['run_identifymcs']:
-        set_curr_task('run_identifymcs')
+        set_curr_task_file('run_identifymcs')
         mcsstats_filename = identifymcs_tb(config)
         if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
@@ -167,7 +167,7 @@ if __name__ == '__main__':
             
     # Step 6 - Match PF to MCS
     if config['run_matchpf']:
-        set_curr_task('run_matchpf')
+        set_curr_task_file('run_matchpf')
         pfstats_filename = match_tbpf_tracks(config)
         if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
@@ -176,7 +176,7 @@ if __name__ == '__main__':
             
     # Step 7 - Identify robust MCS
     if config['run_robustmcs']:
-        set_curr_task('run_robustmcs')
+        set_curr_task_file('run_robustmcs')
         robustmcsstats_filename = define_robust_mcs_pf(config)
         if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
@@ -185,7 +185,7 @@ if __name__ == '__main__':
             
     # Step 8 - Map tracking to pixel files
     if config['run_mapfeature']:
-        set_curr_task('run_mapfeature')
+        set_curr_task_file('run_mapfeature')
         # Map robust MCS track numbers to pixel files (default)
         mapfeature_driver(config, trackstats_filebase=mcsrobust_filebase)
         # Map Tb-only MCS track numbers to pixel files (provide outpath_basename keyword)
@@ -199,7 +199,7 @@ if __name__ == '__main__':
             
     # Step 9 - Movement speed calculation
     if config['run_speed']:
-        set_curr_task('run_speed')
+        set_curr_task_file('run_speed')
         movement_speed(config)
 
     if FLUSH_MEM == "TRUE":
