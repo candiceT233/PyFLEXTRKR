@@ -1,4 +1,4 @@
-import os
+import os, pathlib
 import sys
 import logging
 import dask
@@ -48,7 +48,37 @@ def flush_os_cache(logger):
     print(f"cmd: {command}")
     subprocess.run(command, shell=True)
 
+def set_curr_task_file(task):
+    
+    workflow_name = os.environ.get("WORKFLOW_NAME")
+    path_for_task_files = os.environ.get("PATH_FOR_TASK_FILES")
+    vfd_task_file = None
+    vol_task_file = None
+    
+    if workflow_name and path_for_task_files:
+        vfd_task_file = os.path.join(path_for_task_files, f"{workflow_name}_vfd.curr_task")
+        vol_task_file = os.path.join(path_for_task_files, f"{workflow_name}_vol.curr_task")
+        # Create file and parent file if it does not exist
+        pathlib.Path(vfd_task_file).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(vol_task_file).mkdir(parents=True, exist_ok=True)
 
+    # vfd_task_file = /tmp/$USER/pyflextrkr_vfd.curr_task
+    
+    if vfd_task_file and os.path.exists(vfd_task_file):
+        if os.path.isfile(vfd_task_file):
+            with open(vfd_task_file, "w") as file:
+                file.write(task)
+            print(f"Overwrote: {vfd_task_file} with {task}")
+
+    if vol_task_file and os.path.exists(vol_task_file):
+        if os.path.isfile(vol_task_file):
+            with open(vol_task_file, "w") as file:
+                file.write(task)
+            print(f"Overwrote: {vol_task_file} with {task}")
+    else:
+        print("Invalid or missing PATH_FOR_TASK_FILES environment variable.")    
+    
+    
 if __name__ == '__main__':
 
     # Set the logging message level
@@ -111,7 +141,8 @@ if __name__ == '__main__':
             
     # Step 1 - Identify features
     if config['run_idfeature']:
-        os.environ['CURR_TASK'] = 'run_idfeature'
+        # os.environ['CURR_TASK'] = 'run_idfeature'
+        set_curr_task_file('run_idfeature')
         idfeature_driver(config)
         if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
@@ -121,7 +152,8 @@ if __name__ == '__main__':
 
     # Step 2 - Link features in time adjacent files
     if config['run_tracksingle']:        
-        os.environ['CURR_TASK'] = 'run_tracksingle'
+        # os.environ['CURR_TASK'] = 'run_tracksingle'
+        set_curr_task_file('run_tracksingle')
         tracksingle_driver(config)
         if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
@@ -130,7 +162,8 @@ if __name__ == '__main__':
 
     # Step 3 - Track features through the entire dataset
     if config['run_gettracks']:
-        os.environ['CURR_TASK'] = 'run_gettracks'
+        # os.environ['CURR_TASK'] = 'run_gettracks'
+        set_curr_task_file('run_gettracks')
         tracknumbers_filename = gettracknumbers(config)
         if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
@@ -139,7 +172,8 @@ if __name__ == '__main__':
 
     # Step 4 - Calculate track statistics
     if config['run_trackstats']:
-        os.environ['CURR_TASK'] = 'run_trackstats'
+        # os.environ['CURR_TASK'] = 'run_trackstats'
+        set_curr_task_file('run_trackstats')
         trackstats_filename = trackstats_driver(config)
         if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
@@ -148,7 +182,8 @@ if __name__ == '__main__':
 
     # Step 5 - Identify MCS using Tb
     if config['run_identifymcs']:
-        os.environ['CURR_TASK'] = 'run_identifymcs'
+        # os.environ['CURR_TASK'] = 'run_identifymcs'
+        set_curr_task_file('run_identifymcs')
         mcsstats_filename = identifymcs_tb(config)
         if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
@@ -157,7 +192,8 @@ if __name__ == '__main__':
 
     # Step 6 - Match PF to MCS
     if config['run_matchpf']:
-        os.environ['CURR_TASK'] = 'run_matchpf'    
+        # os.environ['CURR_TASK'] = 'run_matchpf'    
+        set_curr_task_file('run_matchpf')
         pfstats_filename = match_tbpf_tracks(config)
         if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
@@ -166,7 +202,8 @@ if __name__ == '__main__':
 
     # Step 7 - Identify robust MCS
     if config['run_robustmcs']:
-        os.environ['CURR_TASK'] = 'run_robustmcs'
+        # os.environ['CURR_TASK'] = 'run_robustmcs'
+        set_curr_task_file('run_robustmcs')
         robustmcsstats_filename = define_robust_mcs_radar(config)
         if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
@@ -176,7 +213,8 @@ if __name__ == '__main__':
     # Step 8 - Map tracking to pixel files
     if config['run_mapfeature']:
         # Map robust MCS track numbers to pixel files (default)
-        os.environ['CURR_TASK'] =  'run_mapfeature'
+        # os.environ['CURR_TASK'] =  'run_mapfeature'
+        set_curr_task_file('run_mapfeature')
         mapfeature_driver(config, trackstats_filebase=mcsrobust_filebase)
         # # Map Tb-only MCS track numbers to pixel files (provide outpath_basename keyword)
         # mapfeature_driver(config, trackstats_filebase=mcstbstats_filebase, outpath_basename=mcstbmap_outpath)
@@ -189,7 +227,8 @@ if __name__ == '__main__':
 
     # Step 9 - Movement speed calculation
     if config['run_speed']:
-        os.environ['CURR_TASK'] = 'run_speed'
+        # os.environ['CURR_TASK'] = 'run_speed'
+        set_curr_task_file('run_speed')
         movement_speed(config)
         if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
