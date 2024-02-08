@@ -114,7 +114,7 @@ def identifymcs_tb(config):
 
             # System may have multiple periods satisfying area and duration requirements
             # Loop over each period
-            if iccs != []:
+            if len(iccs) > 0:
                 for t in range(0, nbreaks):
                     # Duration requirement
                     # Duration length should be group's last index - first index + 1
@@ -136,24 +136,21 @@ def identifymcs_tb(config):
     ################################################################
     # Get unique track indices
     trackidx_mcs = np.unique(trackidx_mcs.astype(int))
+    nmcs = len(trackidx_mcs)
     # Provide warning message and exit if no MCS identified
-    if trackidx_mcs == []:
+    if nmcs == 0:
         logger.critical("WARNING: No MCS identified.")
         logger.critical(f"Tracking will now exit.")
         sys.exit()
 
-    ################################################################
-    # Subset MCS track index
-    # trackid = np.array(np.where(mcstype > 0))[0, :]
-    nmcs = len(trackidx_mcs)
+    ################################################################   
     logger.info(f"Number of Tb defined MCS: {nmcs}")
 
-    if nmcs > 0:
-        mcsstatus = mcsstatus[trackidx_mcs, :]
-        mcstype = mcstype[trackidx_mcs]
+    mcsstatus = mcsstatus[trackidx_mcs, :]
+    mcstype = mcstype[trackidx_mcs]
 
-        # Get duration when MCS status is met
-        mcs_duration = np.nansum(mcsstatus > 0, axis=1)
+    # Get duration when MCS status is met
+    mcs_duration = np.nansum(mcsstatus > 0, axis=1)
 
     # trackidx_mcs is the index number, want the track number so add one
     mcstracknumbers = np.copy(trackidx_mcs) + 1
