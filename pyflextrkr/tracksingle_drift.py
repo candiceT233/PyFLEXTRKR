@@ -89,7 +89,7 @@ def trackclouds(
 
         # Open file # engine='h5netcdf', 'netcdf4'
         reference_data = xr.open_dataset(
-            reference_file, engine="netcdf4", mask_and_scale=False, decode_times=False, chunks=-1,
+            reference_file, engine="h5netcdf", mask_and_scale=False, decode_times=False, chunks=-1,
         )
         reference_convcold_cloudnumber = reference_data[feature_varname].load().data
         nreference = reference_data[nfeature_varname].load().data
@@ -101,7 +101,7 @@ def trackclouds(
 
         # Open file
         new_data = xr.open_dataset(
-            new_file, mask_and_scale=False, decode_times=False, chunks=-1,
+            new_file, engine="h5netcdf", mask_and_scale=False, decode_times=False, chunks=-1,
         )
         new_convcold_cloudnumber = new_data[feature_varname].load().data
         nnew = new_data[nfeature_varname].load().data
