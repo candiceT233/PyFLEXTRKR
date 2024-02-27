@@ -186,6 +186,7 @@ def regrid_mask(inputfile, outdir, config_regrid):
     ds_out.to_netcdf(
         path=outfilename,
         mode="w",
+        engine="h5netcdf", invalid_netcdf=True, 
         format="NETCDF4",
         unlimited_dims="time",
         encoding=encoding,

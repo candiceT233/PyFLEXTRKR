@@ -191,7 +191,7 @@ def write_cloudid_tb(
 
     # Write netCDF file
     ds_out.to_netcdf(
-        path=cloudid_outfile, mode="w", format="NETCDF4", encoding=encoding,
+        path=cloudid_outfile, mode="w", engine="h5netcdf", invalid_netcdf=True, format="NETCDF4", encoding=encoding,
     )
     return cloudid_outfile
 
@@ -370,6 +370,6 @@ def write_radar_cellid(
 
     # Write to netcdf file
     ds_out.to_netcdf(
-        path=cloudid_outfile, mode='w', format='NETCDF4', unlimited_dims='time', encoding=encoding
+        path=cloudid_outfile, mode='w', engine="h5netcdf", invalid_netcdf=True, format='NETCDF4', unlimited_dims='time', encoding=encoding
     )
     return cloudid_outfile

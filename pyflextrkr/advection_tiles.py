@@ -367,6 +367,8 @@ def calc_mean_advection(config):
     # Write to netcdf file
     ds_out.to_netcdf(
         path=output_filename, mode='w', format='NETCDF4', unlimited_dims='time', encoding=encoding,
+        engine="h5netcdf",
+        invalid_netcdf=True,
     )
     logger.info(f"Advection file saved: {output_filename}")
 

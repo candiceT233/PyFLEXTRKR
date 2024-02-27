@@ -146,6 +146,7 @@ def idvorticity_era5(
         # Write to netcdf file
         dsout.to_netcdf(path=cloudid_outfile,
                         mode='w',
+                        engine="h5netcdf", invalid_netcdf=True,
                         format='NETCDF4',
                         encoding=encoding)
         logger.info(f"{cloudid_outfile}")

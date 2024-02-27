@@ -308,6 +308,7 @@ def map_feature(
     ds_out.to_netcdf(
         path=tracksmap_outfile,
         mode="w",
+        engine="h5netcdf", invalid_netcdf=True,
         engine="h5netcdf",
         format="NETCDF4",
         unlimited_dims="time",

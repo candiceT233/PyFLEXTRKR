@@ -203,7 +203,7 @@ def regrid_file(in_filename, in_basename, out_dir, out_basename):
 
     # Write to netcdf file
     ds_out.to_netcdf(
-        path=out_filename, mode='w', format='NETCDF4', unlimited_dims='Time', encoding=encoding,
+        path=out_filename, mode='w', engine="h5netcdf", invalid_netcdf=True, format='NETCDF4', unlimited_dims='Time', encoding=encoding,
     )
     logger.info(f'{out_filename}')
     return out_filename 

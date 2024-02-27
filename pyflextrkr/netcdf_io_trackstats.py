@@ -451,6 +451,7 @@ def write_trackstats_tb(
     output_data.to_netcdf(
         path=trackstats_outfile,
         mode="w",
+        engine="h5netcdf", invalid_netcdf=True,
         format="NETCDF4",
         unlimited_dims="ntracks",
         encoding=encodelist,
@@ -1070,6 +1071,7 @@ def write_trackstats_radar(
     output_data.to_netcdf(
         path=trackstats_outfile,
         mode="w",
+        engine="h5netcdf", invalid_netcdf=True,
         format="NETCDF4",
         unlimited_dims=trackdimname,
         encoding=encodelist,

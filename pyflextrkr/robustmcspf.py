@@ -410,6 +410,7 @@ def define_robust_mcs_pf(config):
 
     # Write to netcdf file
     dsout.to_netcdf(path=statistics_outfile, mode="w",
+                    engine="h5netcdf", invalid_netcdf=True, 
                     format="NETCDF4", unlimited_dims=tracks_dimname, encoding=encoding)
     logger.info(f"{statistics_outfile}")
 

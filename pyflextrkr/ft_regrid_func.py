@@ -98,7 +98,7 @@ def make_weight_file(gridfile_src, config):
         # Build Regridder
         regridder = xe.Regridder(grid_src, grid_dst, method=regrid_method)
         # Write Regridder to a netCDF file
-        regridder.to_netcdf(weight_filename)
+        regridder.to_netcdf(path=weight_filename,engine="h5netcdf", invalid_netcdf=True,)
         logger.info(f'Weight file saved: {weight_filename}')
     else:
         logger.info(f'Weight file exists: {weight_filename}')

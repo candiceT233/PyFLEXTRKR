@@ -90,7 +90,7 @@ def write_output_file(out_file, data_dict, config):
     # Set encoding/compression for all variables
     comp = dict(zlib=True)
     encoding = {var: comp for var in dsout.data_vars}
-    dsout.to_netcdf(path=out_file, mode='w', format='NETCDF4', unlimited_dims='time', encoding=encoding)
+    dsout.to_netcdf(path=out_file, mode='w', engine="h5netcdf", invalid_netcdf=True, format='NETCDF4', unlimited_dims='time', encoding=encoding)
     logger.info(f'Output: {out_file}')
     return out_file
 

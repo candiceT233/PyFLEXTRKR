@@ -340,7 +340,7 @@ def write_netcdf(
         tb_varname: {'zlib': True, 'dtype': 'float32'},
         pcp_varname: {'zlib': True, 'dtype': 'float32'},
     }
-    dsout.to_netcdf(path=fileout, mode='w', format='NETCDF4', unlimited_dims=time_dimname, encoding=encoding_dict)
+    dsout.to_netcdf(path=fileout, mode='w', engine="h5netcdf", invalid_netcdf=True, format='NETCDF4', unlimited_dims=time_dimname, encoding=encoding_dict)
     return
 
 

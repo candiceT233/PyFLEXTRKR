@@ -270,7 +270,7 @@ def calc_rainrate_tb_ze(filepairnames, outdir, inbasename, outbasename, config):
             'time': {'zlib':True, 'dtype':'float64'},
         }
         encoding.update(bt_dict)
-        dsout.to_netcdf(path=fileout, mode='w', format='NETCDF4', unlimited_dims='time', encoding=encoding)
+        dsout.to_netcdf(path=fileout, mode='w', engine="h5netcdf", invalid_netcdf=True, format='NETCDF4', unlimited_dims='time', encoding=encoding)
 
         logger.info(f'Output: {fileout}')
         logger.debug(f"{(time.time() - start_time)} seconds")

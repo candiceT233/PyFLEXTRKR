@@ -116,7 +116,7 @@ def mainfunc():
     ds_out = ds_out.drop_vars('z')
 
     # Write to output
-    ds_out.to_netcdf(out_filename)
+    ds_out.to_netcdf(path=out_filename,engine="h5netcdf", invalid_netcdf=True,)
     print(f'Output saved: {out_filename}')
     
 

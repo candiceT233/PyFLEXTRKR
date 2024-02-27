@@ -643,6 +643,7 @@ def convert_trackstats_sparse2dense(
     dsout.to_netcdf(
         path=filename_dense,
         mode='w',
+        engine="h5netcdf", invalid_netcdf=True, 
         format='NETCDF4',
         unlimited_dims=tracks_dimname,
         encoding=encoding

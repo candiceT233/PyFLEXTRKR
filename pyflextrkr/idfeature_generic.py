@@ -229,6 +229,7 @@ def idfeature_generic(
         dsout.to_netcdf(
             path=cloudid_outfile,
             mode='w',
+            engine="h5netcdf", invalid_netcdf=True, 
             format='NETCDF4',
             encoding=encoding
         )

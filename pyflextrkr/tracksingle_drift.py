@@ -363,12 +363,12 @@ def trackclouds(
         output_data.refcloud_forward_size.attrs["units"] = "km^2"
 
         # Write netcdf files
-        # output_data.to_netcdf(path=track_outfile, mode='w', format='NETCDF4_CLASSIC', unlimited_dims='times', \
         zlib = True
         output_data.to_netcdf(
             # engine='h5netcdf', # h5netcdf
             path=track_outfile,
             mode="w",
+            engine="h5netcdf", invalid_netcdf=True, 
             format="NETCDF4",
             unlimited_dims="time",
             encoding={

@@ -178,6 +178,7 @@ def movement_speed(
 
     # Write to netcdf file
     dsout.to_netcdf(path=statistics_outfile, mode="w",
+                    engine="h5netcdf", invalid_netcdf=True, 
                     format="NETCDF4", unlimited_dims=tracks_dimname, encoding=encoding)
     logger.info(f"{statistics_outfile}")
 
