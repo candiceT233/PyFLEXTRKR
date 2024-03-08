@@ -332,7 +332,8 @@ def identifycell_LES_xarray(statistics_filebase, stats_path, startdate, enddate,
     logger.info(celltrackstatistics_outfile)
     logger.info('')
 
-    output_data.to_netcdf(path=celltrackstatistics_outfile, mode='w', format='NETCDF4_CLASSIC', unlimited_dims='ntracks', \
+    output_data.to_netcdf(path=celltrackstatistics_outfile, mode='w', engine="h5netcdf", invalid_netcdf=True, \
+                          format='NETCDF4_CLASSIC', unlimited_dims='ntracks', \
                           encoding={'cell_basetime': {'zlib':True, 'units': 'seconds since 1970-01-01'}, \
                                     'cell_datetimestring': {'zlib':True}, \
                                     'cell_length': {'zlib':True, '_FillValue': -9999}, \
@@ -691,7 +692,8 @@ def identifycell_LES_netcdf4(statistics_filebase, stats_path, startdate, enddate
     logger.info(celltrackstatistics_outfile)
     logger.info('')
 
-    output_data.to_netcdf(path=celltrackstatistics_outfile, mode='w', format='NETCDF4_CLASSIC', unlimited_dims='ntracks', \
+    output_data.to_netcdf(path=celltrackstatistics_outfile, mode='w', engine="h5netcdf", invalid_netcdf=True, \
+                          format='NETCDF4_CLASSIC', unlimited_dims='ntracks', \
                           encoding={'cell_basetime': {'dtype': 'int64', 'zlib':True, 'units': 'seconds since 1970-01-01'}, \
                                     'cell_datetimestring': {'zlib':True}, \
                                     'cell_length': {'zlib':True, '_FillValue': -9999}, \
@@ -1036,7 +1038,8 @@ def identifycell_LES_netcdf4(statistics_filebase, stats_path, startdate, enddate
     logger.info(celltrackstatistics_outfile)
     logger.info('')
 
-    output_data.to_netcdf(path=celltrackstatistics_outfile, mode='w', format='NETCDF4_CLASSIC', unlimited_dims='ntracks', \
+    output_data.to_netcdf(path=celltrackstatistics_outfile, mode='w', engine="h5netcdf", invalid_netcdf=True, \
+                          format='NETCDF4_CLASSIC', unlimited_dims='ntracks', \
                           encoding={'cell_basetime': {'zlib':True, 'units': 'seconds since 1970-01-01'}, \
                                     'cell_datetimestring': {'zlib':True}, \
                                     'cell_length': {'zlib':True, '_FillValue': -9999}, \
@@ -1395,7 +1398,8 @@ def identifycell_WRF_netcdf4(statistics_filebase, stats_path, startdate, enddate
     logger.info(celltrackstatistics_outfile)
     logger.info('')
 
-    output_data.to_netcdf(path=celltrackstatistics_outfile, mode='w', format='NETCDF4_CLASSIC', unlimited_dims='ntracks', \
+    output_data.to_netcdf(path=celltrackstatistics_outfile, mode='w', engine="h5netcdf", invalid_netcdf=True, \
+                          format='NETCDF4_CLASSIC', unlimited_dims='ntracks', \
                           encoding={'cell_basetime': {'dtype': 'int64', 'zlib':True, 'units': 'seconds since 1970-01-01'}, \
                                     'cell_datetimestring': {'zlib':True}, \
                                     'cell_length': {'zlib':True, '_FillValue': -9999}, \

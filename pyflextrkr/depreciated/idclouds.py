@@ -1023,6 +1023,8 @@ def idclouds_mergedir(zipped_inputs):
                     output_data.to_netcdf(
                         path=cloudid_outfile,
                         mode="w",
+                        engine="h5netcdf",
+                        invalid_netcdf=True,
                         format="NETCDF4_CLASSIC",
                         unlimited_dims="time",
                         encoding={
@@ -1531,6 +1533,8 @@ def idclouds_LES(zipped_inputs):
                     output_data.to_netcdf(
                         path=cloudid_outfile,
                         mode="w",
+                        engine="h5netcdf",
+                        invalid_netcdf=True,
                         format="NETCDF4_CLASSIC",
                         unlimited_dims="time",
                         encoding={

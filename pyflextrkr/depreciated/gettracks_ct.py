@@ -900,6 +900,8 @@ def gettracknumbers(
     output_data.to_netcdf(
         path=tracknumbers_outfile,
         mode="w",
+        engine="h5netcdf",
+        invalid_netcdf=True,
         format="NETCDF4_CLASSIC",
         unlimited_dims="ntracks",
         encoding={

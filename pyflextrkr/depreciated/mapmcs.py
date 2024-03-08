@@ -700,6 +700,7 @@ def mapmcs_pf(zipped_inputs):
         output_data.to_netcdf(
             path=mcstrackmaps_outfile,
             mode="w",
+            engine="h5netcdf", invalid_netcdf=True,
             format="NETCDF4_CLASSIC",
             unlimited_dims="time",
             encoding={
@@ -931,6 +932,7 @@ def mapmcs_pf(zipped_inputs):
         output_data.to_netcdf(
             path=mcstrackmaps_outfile,
             mode="w",
+            engine="h5netcdf", invalid_netcdf=True,
             format="NETCDF4_CLASSIC",
             unlimited_dims="time",
             encoding={

@@ -2016,6 +2016,7 @@ def trackstats_LES(
     output_data.to_netcdf(
         path=trackstats_outfile,
         mode="w",
+        engine="h5netcdf", invalid_netcdf=True,
         format="NETCDF4_CLASSIC",
         unlimited_dims="ntracks",
         encoding={
@@ -3194,6 +3195,7 @@ def trackstats_WRF(
     output_data.to_netcdf(
         path=trackstats_outfile,
         mode="w",
+        engine="h5netcdf", invalid_netcdf=True,
         format="NETCDF4_CLASSIC",
         unlimited_dims="ntracks",
         encoding={

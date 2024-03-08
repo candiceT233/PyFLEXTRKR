@@ -373,6 +373,7 @@ def trackclouds(zipped_inputs):
         output_data.to_netcdf(
             path=track_outfile,
             mode="w",
+            engine="h5netcdf", invalid_netcdf=True,
             format="NETCDF4_CLASSIC",
             unlimited_dims="time",
             encoding={

@@ -314,6 +314,7 @@ def mapcell_radar(
     ds_out.to_netcdf(
         path=tracksmap_outfile,
         mode="w",
+        engine="h5netcdf", invalid_netcdf=True,
         format="NETCDF4",
         unlimited_dims="time",
         encoding=encodelist,

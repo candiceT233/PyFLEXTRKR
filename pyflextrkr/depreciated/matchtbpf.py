@@ -945,6 +945,7 @@ def identifypf_wrf_rain(
     output_data.to_netcdf(
         path=statistics_outfile,
         mode="w",
+        engine="h5netcdf", invalid_netcdf=True,
         format="NETCDF4_CLASSIC",
         unlimited_dims="track",
         encoding={
