@@ -1,4 +1,4 @@
-name: pyflextrkr
+name: flextrkr
 channels:
   - conda-forge
   - defaults
