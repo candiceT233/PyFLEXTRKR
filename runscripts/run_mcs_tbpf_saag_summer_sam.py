@@ -29,6 +29,7 @@ except:
     SLURM_JOB_NUM_NODES = 1
     HOSTLIST = "localhost"
 
+
 def flush_os_cache(logger):
     logger.info(f"Flushing OS Cahces ...")
     # command = "sudo /sbin/sysctl vm.drop_caches=3"
@@ -40,12 +41,6 @@ def flush_os_cache(logger):
     print(f"cmd: {command}")
     subprocess.run(command, shell=True)
 
-def set_curr_task(task):
-    os.environ['CURR_TASK'] = task
-    command = "echo running task [$CURR_TASK]"
-    command2 = "export CURR_TASK=$CURR_TASK"
-    subprocess.run(command, shell=True)
-    subprocess.run(command2, shell=True)
 
 def set_curr_task_file(task):
     
@@ -57,25 +52,20 @@ def set_curr_task_file(task):
     if workflow_name and path_for_task_files:
         vfd_task_file = os.path.join(path_for_task_files, f"{workflow_name}_vfd.curr_task")
         vol_task_file = os.path.join(path_for_task_files, f"{workflow_name}_vol.curr_task")
-        # Create file and parent file if it does not exist
-        pathlib.Path(vfd_task_file).mkdir(parents=True, exist_ok=True)
-        pathlib.Path(vol_task_file).mkdir(parents=True, exist_ok=True)
 
-    # vfd_task_file = /tmp/$USER/pyflextrkr_vfd.curr_task
-    
-    if vfd_task_file and os.path.exists(vfd_task_file):
-        if os.path.isfile(vfd_task_file):
-            with open(vfd_task_file, "w") as file:
-                file.write(task)
-            print(f"Overwrote: {vfd_task_file} with {task}")
+        # Make path for task files if it does not exist
+        pathlib.Path(path_for_task_files).mkdir(parents=True, exist_ok=True)
 
-    if vol_task_file and os.path.exists(vol_task_file):
-        if os.path.isfile(vol_task_file):
-            with open(vol_task_file, "w") as file:
-                file.write(task)
-            print(f"Overwrote: {vol_task_file} with {task}")
+        with open(vfd_task_file, "w") as file:
+            file.write(task)
+        print(f"Overwrote: {vfd_task_file} with {task}")
+
+        with open(vol_task_file, "w") as file:
+            file.write(task)
+        print(f"Overwrote: {vol_task_file} with {task}")
     else:
-        print("Invalid or missing PATH_FOR_TASK_FILES environment variable.")    
+        print("Invalid or missing WORKFLOW_NAME, PATH_FOR_TASK_FILES environment variable.") 
+    
     
 
 if __name__ == '__main__':
