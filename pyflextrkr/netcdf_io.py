@@ -191,7 +191,8 @@ def write_cloudid_tb(
 
     # Write netCDF file
     ds_out.to_netcdf(
-        path=cloudid_outfile, mode="w", format="NETCDF4", encoding=encoding,
+        path=cloudid_outfile, mode="w", format="NETCDF4", encoding=encoding, 
+        engine="h5netcdf", invalid_netcdf=True,
     )
     return cloudid_outfile
 

@@ -712,7 +712,8 @@ def gettracknumbers(config):
         path=tracknumbers_outfile,
         mode="w",
         engine="h5netcdf",
-        format="NETCDF4",
+        invalid_netcdf=True,
+        # format="NETCDF4",
         # format="NETCDF4_CLASSIC",
         # unlimited_dims="ntracks",
         encoding={

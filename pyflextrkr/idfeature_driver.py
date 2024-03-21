@@ -52,7 +52,9 @@ def idfeature_driver(config):
     rawdatafiles = infiles_info[0]
     nfiles = len(rawdatafiles)
     logger.info(f"Total number of files to process: {nfiles}")
-
+    
+    logger.info(f"run_parallel: {run_parallel}")
+    
     # Serial
     if run_parallel == 0:
         for ifile in range(0, nfiles):
@@ -61,6 +63,7 @@ def idfeature_driver(config):
     elif run_parallel >= 1:
         results = []
         for ifile in range(0, nfiles):
+            logger.info(f"Processing file {ifile+1} of {nfiles} : {rawdatafiles[ifile]}")
             result = dask.delayed(id_feature)(rawdatafiles[ifile], config)
             results.append(result)
         final_result = dask.compute(*results)

@@ -230,7 +230,8 @@ def idfeature_generic(
             path=cloudid_outfile,
             mode='w',
             format='NETCDF4',
-            encoding=encoding
+            encoding=encoding,
+            # engine="h5netcdf", invalid_netcdf=True,
         )
         logger.info(f"{cloudid_outfile}")
 

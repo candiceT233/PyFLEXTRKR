@@ -387,6 +387,7 @@ def trackclouds(
                     "_FillValue": fillval,
                 },
             },
+            engine="h5netcdf", invalid_netcdf=True,
         )
         logger.info(track_outfile)
         return track_outfile
