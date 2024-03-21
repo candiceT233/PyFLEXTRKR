@@ -89,7 +89,6 @@ dependencies:
   - gstreamer=1.22.3=h977cf35_1
   - harfbuzz=7.3.0=hdb3a94d_0
   - hdf4=4.2.15=h501b40f_6
-  - hdf5=1.14.0=nompi_hb72d44e_103
   - icu=72.1=hcb278e6_0
   - idna=3.4=pyhd8ed1ab_0
   - imagecodecs=2023.1.23=py311hd374d05_2
