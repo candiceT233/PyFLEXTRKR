@@ -135,6 +135,7 @@ if __name__ == '__main__':
 
             
     # Step 1 - Identify features
+    start_time = time.time()
     if config['run_idfeature']:
         # os.environ['CURR_TASK'] = 'run_idfeature'
         set_curr_task_file('run_idfeature')
@@ -143,9 +144,12 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
             flush_os_cache(logger)
             flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
-            
+    duration_ms = round((time.time() - start_time) * 1000)
+    duration_sec = round((time.time() - start_time), 2)
+    logger.info(f"Stage 1 [run_idfeature]: {duration_ms} milliseconds, {duration_sec} seconds")
 
     # Step 2 - Link features in time adjacent files
+    start_time = time.time()
     if config['run_tracksingle']:        
         # os.environ['CURR_TASK'] = 'run_tracksingle'
         set_curr_task_file('run_tracksingle')
@@ -154,8 +158,14 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
             flush_os_cache(logger)
             flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
+    end_time = time.time()
+    duration_ms = round((end_time - start_time) * 1000)
+    duration_sec = round((end_time - start_time), 2)
+    logger.info(f"Stage 2 [run_tracksingle]: {duration_ms} milliseconds, {duration_sec} seconds")
+
 
     # Step 3 - Track features through the entire dataset
+    start_time = time.time()
     if config['run_gettracks']:
         # os.environ['CURR_TASK'] = 'run_gettracks'
         set_curr_task_file('run_gettracks')
@@ -164,8 +174,14 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
             flush_os_cache(logger)
             flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
+    end_time = time.time()
+    duration_ms = round((end_time - start_time) * 1000)
+    duration_sec = round((end_time - start_time), 2)
+    logger.info(f"Stage 3 [run_gettracks]: {duration_ms} milliseconds, {duration_sec} seconds")
+
 
     # Step 4 - Calculate track statistics
+    start_time = time.time()
     if config['run_trackstats']:
         # os.environ['CURR_TASK'] = 'run_trackstats'
         set_curr_task_file('run_trackstats')
@@ -174,8 +190,13 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
             flush_os_cache(logger)
             flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
+    end_time = time.time()
+    duration_ms = round((end_time - start_time) * 1000)
+    duration_sec = round((end_time - start_time), 2)
+    logger.info(f"Stage 4 [run_trackstats]: {duration_ms} milliseconds, {duration_sec} seconds")
 
     # Step 5 - Identify MCS using Tb
+    start_time = time.time()
     if config['run_identifymcs']:
         # os.environ['CURR_TASK'] = 'run_identifymcs'
         set_curr_task_file('run_identifymcs')
@@ -184,8 +205,14 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
             flush_os_cache(logger)
             flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
+    end_time = time.time()
+    duration_ms = round((end_time - start_time) * 1000)
+    duration_sec = round((end_time - start_time), 2)
+    logger.info(f"Stage 5 [run_trackstats]: {duration_ms} milliseconds, {duration_sec} seconds")
+            
 
     # Step 6 - Match PF to MCS
+    start_time = time.time()
     if config['run_matchpf']:
         # os.environ['CURR_TASK'] = 'run_matchpf'    
         set_curr_task_file('run_matchpf')
@@ -194,8 +221,14 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
             flush_os_cache(logger)
             flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
+    end_time = time.time()
+    duration_ms = round((end_time - start_time) * 1000)
+    duration_sec = round((end_time - start_time), 2)
+    logger.info(f"Stage 6 [run_matchpf]: {duration_ms} milliseconds, {duration_sec} seconds")
+
 
     # Step 7 - Identify robust MCS
+    start_time = time.time()
     if config['run_robustmcs']:
         # os.environ['CURR_TASK'] = 'run_robustmcs'
         set_curr_task_file('run_robustmcs')
@@ -204,8 +237,14 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
             flush_os_cache(logger)
             flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
-
+    end_time = time.time()
+    duration_ms = round((end_time - start_time) * 1000)
+    duration_sec = round((end_time - start_time), 2)
+    logger.info(f"Stage 7 [run_robustmcs]: {duration_ms} milliseconds, {duration_sec} seconds")
+            
+            
     # Step 8 - Map tracking to pixel files
+    start_time = time.time()
     if config['run_mapfeature']:
         # Map robust MCS track numbers to pixel files (default)
         # os.environ['CURR_TASK'] =  'run_mapfeature'
@@ -219,8 +258,14 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
             flush_os_cache(logger)
             flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
+    end_time = time.time()
+    duration_ms = round((end_time - start_time) * 1000)
+    duration_sec = round((end_time - start_time), 2)
+    logger.info(f"Stage 8 [run_mapfeature]: {duration_ms} milliseconds, {duration_sec} seconds")
+
 
     # Step 9 - Movement speed calculation
+    start_time = time.time()
     if config['run_speed']:
         # os.environ['CURR_TASK'] = 'run_speed'
         set_curr_task_file('run_speed')
@@ -229,7 +274,11 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
             flush_os_cache(logger)
             flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
-    
+    end_time = time.time()
+    duration_ms = round((end_time - start_time) * 1000)
+    duration_sec = round((end_time - start_time), 2)
+    logger.info(f"Stage 9 [run_speed]: {duration_ms} milliseconds, {duration_sec} seconds")
+
     if FLUSH_MEM == "TRUE":
         logger.info("OS cache flush overhead : {:.2f} milliseconds".format(sum(flush_os_cache_time)))
     

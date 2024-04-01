@@ -113,7 +113,9 @@ if __name__ == '__main__':
     
     flush_os_cache_time = []
     
+    
     # Step 1 - Identify features
+    start_time = time.time()
     if config['run_idfeature']:
         set_curr_task_file('run_idfeature')
         idfeature_driver(config)
@@ -121,8 +123,13 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
             flush_os_cache(logger)
             flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
+    duration_ms = round((time.time() - start_time) * 1000)
+    duration_sec = round((time.time() - start_time), 2)
+    logger.info(f"Stage 1 [run_idfeature]: {duration_ms} milliseconds, {duration_sec} seconds")
+    
 
     # Step 2 - Link features in time adjacent files
+    start_time = time.time()
     if config['run_tracksingle']:
         set_curr_task_file('run_tracksingle')
         tracksingle_driver(config)
@@ -130,8 +137,13 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
             flush_os_cache(logger)
             flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
+    end_time = time.time()
+    duration_ms = round((end_time - start_time) * 1000)
+    duration_sec = round((end_time - start_time), 2)
+    logger.info(f"Stage 2 [run_tracksingle]: {duration_ms} milliseconds, {duration_sec} seconds")
 
     # Step 3 - Track features through the entire dataset
+    start_time = time.time()
     if config['run_gettracks']:
         set_curr_task_file('run_gettracks')
         tracknumbers_filename = gettracknumbers(config)
@@ -139,8 +151,13 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
             flush_os_cache(logger)
             flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
-            
+    end_time = time.time()
+    duration_ms = round((end_time - start_time) * 1000)
+    duration_sec = round((end_time - start_time), 2)
+    logger.info(f"Stage 3 [run_gettracks]: {duration_ms} milliseconds, {duration_sec} seconds")
+
     # Step 4 - Calculate track statistics
+    start_time = time.time()
     if config['run_trackstats']:
         set_curr_task_file('run_trackstats')
         trackstats_filename = trackstats_driver(config)
@@ -148,17 +165,27 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
             flush_os_cache(logger)
             flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
-            
+    end_time = time.time()
+    duration_ms = round((end_time - start_time) * 1000)
+    duration_sec = round((end_time - start_time), 2)
+    logger.info(f"Stage 4 [run_trackstats]: {duration_ms} milliseconds, {duration_sec} seconds")
+    
     # Step 5 - Identify MCS using Tb
-    if config['run_identifymcs']:
-        set_curr_task_file('run_identifymcs')
+    start_time = time.time()
+    if config['run_trackstats']:
+        set_curr_task_file('run_trackstats')
         mcsstats_filename = identifymcs_tb(config)
         if FLUSH_MEM == "TRUE":
             start_time = time.perf_counter()
             flush_os_cache(logger)
             flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
+    end_time = time.time()
+    duration_ms = round((end_time - start_time) * 1000)
+    duration_sec = round((end_time - start_time), 2)
+    logger.info(f"Stage 5 [run_trackstats]: {duration_ms} milliseconds, {duration_sec} seconds")
             
     # Step 6 - Match PF to MCS
+    start_time = time.time()
     if config['run_matchpf']:
         set_curr_task_file('run_matchpf')
         pfstats_filename = match_tbpf_tracks(config)
@@ -166,8 +193,13 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
             flush_os_cache(logger)
             flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
-            
+    end_time = time.time()
+    duration_ms = round((end_time - start_time) * 1000)
+    duration_sec = round((end_time - start_time), 2)
+    logger.info(f"Stage 6 [run_matchpf]: {duration_ms} milliseconds, {duration_sec} seconds")
+
     # Step 7 - Identify robust MCS
+    start_time = time.time()
     if config['run_robustmcs']:
         set_curr_task_file('run_robustmcs')
         robustmcsstats_filename = define_robust_mcs_pf(config)
@@ -175,8 +207,13 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
             flush_os_cache(logger)
             flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
+    end_time = time.time()
+    duration_ms = round((end_time - start_time) * 1000)
+    duration_sec = round((end_time - start_time), 2)
+    logger.info(f"Stage 7 [run_robustmcs]: {duration_ms} milliseconds, {duration_sec} seconds")
             
     # Step 8 - Map tracking to pixel files
+    start_time = time.time()
     if config['run_mapfeature']:
         set_curr_task_file('run_mapfeature')
         # Map robust MCS track numbers to pixel files (default)
@@ -189,11 +226,20 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
             flush_os_cache(logger)
             flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
-            
+    end_time = time.time()
+    duration_ms = round((end_time - start_time) * 1000)
+    duration_sec = round((end_time - start_time), 2)
+    logger.info(f"Stage 8 [run_mapfeature]: {duration_ms} milliseconds, {duration_sec} seconds")
+
     # Step 9 - Movement speed calculation
+    start_time = time.time()
     if config['run_speed']:
         set_curr_task_file('run_speed')
         movement_speed(config)
+    end_time = time.time()
+    duration_ms = round((end_time - start_time) * 1000)
+    duration_sec = round((end_time - start_time), 2)
+    logger.info(f"Stage 9 [run_speed]: {duration_ms} milliseconds, {duration_sec} seconds")
 
     if FLUSH_MEM == "TRUE":
         logger.info("OS cache flush overhead : {:.2f} milliseconds".format(sum(flush_os_cache_time)))
