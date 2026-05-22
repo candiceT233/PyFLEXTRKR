@@ -2,6 +2,7 @@ import os, pathlib
 import sys
 import logging
 import dask
+from dask import distributed
 from dask.distributed import Client, LocalCluster
 from pyflextrkr.ft_utilities import load_config, setup_logging
 from pyflextrkr.idfeature_driver import idfeature_driver
@@ -16,6 +17,9 @@ from pyflextrkr.movement_speed import movement_speed
 
 # from dask_jobqueue import SLURMCluster
 from dask_mpi import initialize
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+
 # Added for flushing memory
 import subprocess
 import time
@@ -32,11 +36,11 @@ except:
 
 def flush_os_cache(logger):
     logger.info(f"Flushing OS Cahces ...")
-    # command = "sudo /sbin/sysctl vm.drop_caches=3"
+    # command = "sudo /sbin/sysctl vm.drop_caches=3" # "drop_caches"
     if SLURM_JOB_NUM_NODES <= 1:
-        command = "drop_caches"
+        command = "sudo /sbin/sysctl vm.drop_caches=3"
     else:
-        command = f"mpirun -np {SLURM_JOB_NUM_NODES} --host {HOSTLIST} drop_caches"
+        command = f"mpirun -np {SLURM_JOB_NUM_NODES} --host {HOSTLIST} sudo /sbin/sysctl vm.drop_caches=3"
     
     print(f"cmd: {command}")
     subprocess.run(command, shell=True)
@@ -58,14 +62,13 @@ def set_curr_task_file(task):
 
         with open(vfd_task_file, "w") as file:
             file.write(task)
-        print(f"Overwrote: {vfd_task_file} with {task}")
+        # print(f"Overwrote: {vfd_task_file} with {task}")
 
         with open(vol_task_file, "w") as file:
             file.write(task)
-        print(f"Overwrote: {vol_task_file} with {task}")
+        # print(f"Overwrote: {vol_task_file} with {task}")
     else:
         print("Invalid or missing WORKFLOW_NAME, PATH_FOR_TASK_FILES environment variable.") 
-    
     
 
 if __name__ == '__main__':
@@ -99,120 +102,131 @@ if __name__ == '__main__':
         client = Client(cluster)
         client.run(setup_logging)
     elif config['run_parallel'] == 2:
-        mem_limit = 1048576 * 1024 * 8 # 32 GiB
+        mem_limit = 1024 * 1024 * 1024 * 4 # 4 GiB per process
         # initialize(dashboard=False,memory_limit=mem_limit) # ,protocol="ucx",interface="ib0" scheduler_port=9000
-        if not os.path.exists('/tmp/run_mcs_tbpfradar3d_wrf'):
-            os.mkdir('/tmp/run_mcs_tbpfradar3d_wrf')
-        initialize(dashboard=False, local_directory="/tmp/run_mcs_tbpfradar3d_wrf")
-        
-        client = Client()
+        dask_tmp_dir = config.get("dask_tmp_dir", "./")
+        # if not os.path.exists(dask_tmp_dir):
+        #     os.mkdir(dask_tmp_dir)
+        # initialize(dashboard=False, local_directory=dask_tmp_dir, interface="ib0",memory_limit=mem_limit) # ,protocol="ucx",interface="ib0" scheduler_port=9000
+        initialize(dashboard=False, 
+                   local_directory=dask_tmp_dir,
+                   )
+
+        dask_timeout = config.get("timeout", 60)
+        client = Client(timeout=dask_timeout)
         client.run(setup_logging)
         print("Client scheduler:", client.scheduler)
+        
     else:
         logger.info(f"Running in serial.")
     
     flush_os_cache_time = []
-    
-    
+
+
+    workflow_start_time = time.time()
     # Step 1 - Identify features
+    if FLUSH_MEM == "TRUE":
+        start_time = time.perf_counter()
+        flush_os_cache(logger)
+        flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     start_time = time.time()
     if config['run_idfeature']:
         set_curr_task_file('run_idfeature')
         idfeature_driver(config)
-        if FLUSH_MEM == "TRUE":
-            start_time = time.perf_counter()
-            flush_os_cache(logger)
-            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     duration_ms = round((time.time() - start_time) * 1000)
     duration_sec = round((time.time() - start_time), 2)
     logger.info(f"Stage 1 [run_idfeature]: {duration_ms} milliseconds, {duration_sec} seconds")
     
 
     # Step 2 - Link features in time adjacent files
+    if FLUSH_MEM == "TRUE":
+        start_time = time.perf_counter()
+        flush_os_cache(logger)
+        flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     start_time = time.time()
     if config['run_tracksingle']:
         set_curr_task_file('run_tracksingle')
         tracksingle_driver(config)
-        if FLUSH_MEM == "TRUE":
-            start_time = time.perf_counter()
-            flush_os_cache(logger)
-            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     end_time = time.time()
     duration_ms = round((end_time - start_time) * 1000)
     duration_sec = round((end_time - start_time), 2)
     logger.info(f"Stage 2 [run_tracksingle]: {duration_ms} milliseconds, {duration_sec} seconds")
 
     # Step 3 - Track features through the entire dataset
+    if FLUSH_MEM == "TRUE":
+        start_time = time.perf_counter()
+        flush_os_cache(logger)
+        flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     start_time = time.time()
     if config['run_gettracks']:
         set_curr_task_file('run_gettracks')
         tracknumbers_filename = gettracknumbers(config)
-        if FLUSH_MEM == "TRUE":
-            start_time = time.perf_counter()
-            flush_os_cache(logger)
-            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     end_time = time.time()
     duration_ms = round((end_time - start_time) * 1000)
     duration_sec = round((end_time - start_time), 2)
     logger.info(f"Stage 3 [run_gettracks]: {duration_ms} milliseconds, {duration_sec} seconds")
 
     # Step 4 - Calculate track statistics
+    if FLUSH_MEM == "TRUE":
+        start_time = time.perf_counter()
+        flush_os_cache(logger)
+        flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     start_time = time.time()
     if config['run_trackstats']:
         set_curr_task_file('run_trackstats')
         trackstats_filename = trackstats_driver(config)
-        if FLUSH_MEM == "TRUE":
-            start_time = time.perf_counter()
-            flush_os_cache(logger)
-            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     end_time = time.time()
     duration_ms = round((end_time - start_time) * 1000)
     duration_sec = round((end_time - start_time), 2)
     logger.info(f"Stage 4 [run_trackstats]: {duration_ms} milliseconds, {duration_sec} seconds")
     
     # Step 5 - Identify MCS using Tb
+    if FLUSH_MEM == "TRUE":
+        start_time = time.perf_counter()
+        flush_os_cache(logger)
+        flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     start_time = time.time()
-    if config['run_trackstats']:
-        set_curr_task_file('run_trackstats')
+    if config['run_identifymcs']:
+        set_curr_task_file('run_identifymcs')
         mcsstats_filename = identifymcs_tb(config)
-        if FLUSH_MEM == "TRUE":
-            start_time = time.perf_counter()
-            flush_os_cache(logger)
-            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     end_time = time.time()
     duration_ms = round((end_time - start_time) * 1000)
     duration_sec = round((end_time - start_time), 2)
     logger.info(f"Stage 5 [run_trackstats]: {duration_ms} milliseconds, {duration_sec} seconds")
             
     # Step 6 - Match PF to MCS
+    if FLUSH_MEM == "TRUE":
+        start_time = time.perf_counter()
+        flush_os_cache(logger)
+        flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     start_time = time.time()
     if config['run_matchpf']:
         set_curr_task_file('run_matchpf')
         pfstats_filename = match_tbpf_tracks(config)
-        if FLUSH_MEM == "TRUE":
-            start_time = time.perf_counter()
-            flush_os_cache(logger)
-            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     end_time = time.time()
     duration_ms = round((end_time - start_time) * 1000)
     duration_sec = round((end_time - start_time), 2)
     logger.info(f"Stage 6 [run_matchpf]: {duration_ms} milliseconds, {duration_sec} seconds")
 
     # Step 7 - Identify robust MCS
+    if FLUSH_MEM == "TRUE":
+        start_time = time.perf_counter()
+        flush_os_cache(logger)
+        flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     start_time = time.time()
     if config['run_robustmcs']:
         set_curr_task_file('run_robustmcs')
         robustmcsstats_filename = define_robust_mcs_pf(config)
-        if FLUSH_MEM == "TRUE":
-            start_time = time.perf_counter()
-            flush_os_cache(logger)
-            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     end_time = time.time()
     duration_ms = round((end_time - start_time) * 1000)
     duration_sec = round((end_time - start_time), 2)
     logger.info(f"Stage 7 [run_robustmcs]: {duration_ms} milliseconds, {duration_sec} seconds")
             
     # Step 8 - Map tracking to pixel files
+    if FLUSH_MEM == "TRUE":
+        start_time = time.perf_counter()
+        flush_os_cache(logger)
+        flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     start_time = time.time()
     if config['run_mapfeature']:
         set_curr_task_file('run_mapfeature')
@@ -222,16 +236,16 @@ if __name__ == '__main__':
         # mapfeature_driver(config, trackstats_filebase=mcstbstats_filebase, outpath_basename=mcstbmap_outpath)
         # Map all Tb track numbers to pixel level files (provide outpath_basename keyword)
         # mapfeature_driver(config, trackstats_filebase, outpath_basename=alltrackmap_outpath)
-        if FLUSH_MEM == "TRUE":
-            start_time = time.perf_counter()
-            flush_os_cache(logger)
-            flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     end_time = time.time()
     duration_ms = round((end_time - start_time) * 1000)
     duration_sec = round((end_time - start_time), 2)
     logger.info(f"Stage 8 [run_mapfeature]: {duration_ms} milliseconds, {duration_sec} seconds")
 
     # Step 9 - Movement speed calculation
+    if FLUSH_MEM == "TRUE":
+        start_time = time.perf_counter()
+        flush_os_cache(logger)
+        flush_os_cache_time.append((time.perf_counter() - start_time) * 1000)
     start_time = time.time()
     if config['run_speed']:
         set_curr_task_file('run_speed')
@@ -241,6 +255,21 @@ if __name__ == '__main__':
     duration_sec = round((end_time - start_time), 2)
     logger.info(f"Stage 9 [run_speed]: {duration_ms} milliseconds, {duration_sec} seconds")
 
+    workflow_end_time = time.time()
+    workflow_duration_ms = round((workflow_end_time - workflow_start_time) * 1000)
+    workflow_duration_sec = round((workflow_end_time - workflow_start_time), 2)
+    logger.info(f"Workflow duration: {workflow_duration_ms} milliseconds, {workflow_duration_sec} seconds")
+
     if FLUSH_MEM == "TRUE":
         logger.info("OS cache flush overhead : {:.2f} milliseconds".format(sum(flush_os_cache_time)))
-        
+    
+
+    try:
+        client.close()
+        client.shutdown()  # Explicitly shut down the scheduler if possible
+    except distributed.TimeoutError:
+        print("WARNING: Timed out while attempting to close Dask client.")
+        exit(0)
+    except Exception as e:
+        print(f"Unexpected error during Dask client shutdown: {e}")
+        exit(0)
